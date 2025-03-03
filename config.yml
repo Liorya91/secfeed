@@ -1,0 +1,7 @@
+categories: ["programming", "security"]
+similarity_threshold: 0.85
+rss_feed:
+  - url: "https://www.reddit.com/r/devsecops/.rss"
+    name: "programming"
+  - url: "https://www.reddit.com/r/netsec/.rss"
+    name: "programming"
