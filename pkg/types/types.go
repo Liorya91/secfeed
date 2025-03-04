@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -24,7 +25,13 @@ func (a Article) String() string {
 
 func (a Article) FormatAsMarkdown() string {
 	// Summary is already in markdown format
-	return "# " + a.Title + "\n\n" + a.Summary + "\n\n" + "Read more [here](" + a.Link + ")"
+	return fmt.Sprintf("# %s\n\n%s\n\nRead more [here](%s)", a.Title, a.Summary, a.Link)
+}
+
+func (a Article) FormatAsSlackMrkdwn() string {
+	a.Summary = strings.ReplaceAll(a.Summary, "- ", "• ")
+	a.Summary = strings.ReplaceAll(a.Summary, "**", "*")
+	return fmt.Sprintf("*%s*\n\n%s\n\nRead more <%s|here>", a.Title, a.Summary, a.Link)
 }
 
 // CategoryRelevance represents the relevance of a category to an article.

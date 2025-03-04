@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/alex-ilgayev/secfeed/pkg/config"
+	"github.com/alex-ilgayev/secfeed/pkg/constants"
 	"github.com/alex-ilgayev/secfeed/pkg/types"
 	openai "github.com/sashabaranov/go-openai"
 	log "github.com/sirupsen/logrus"
@@ -82,9 +83,9 @@ type Client struct {
 }
 
 func NewClient() (*Client, error) {
-	apiKey := os.Getenv("OPENAI_API_KEY")
+	apiKey := os.Getenv(constants.EnvOpenAiApiKey)
 	if apiKey == "" {
-		return nil, fmt.Errorf("OPENAI_API_KEY environment variable is not set")
+		return nil, fmt.Errorf("%s environment variable is not set", constants.EnvOpenAiApiKey)
 	}
 
 	client := openai.NewClient(apiKey)

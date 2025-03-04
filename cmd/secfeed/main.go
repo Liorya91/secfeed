@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/alex-ilgayev/secfeed/pkg/config"
+	"github.com/alex-ilgayev/secfeed/pkg/constants"
 	"github.com/alex-ilgayev/secfeed/pkg/feed"
 	"github.com/alex-ilgayev/secfeed/pkg/llm"
 	"github.com/alex-ilgayev/secfeed/pkg/signal"
 	"github.com/alex-ilgayev/secfeed/pkg/similarity"
+	"github.com/alex-ilgayev/secfeed/pkg/slack"
 	"github.com/alex-ilgayev/secfeed/pkg/types"
 	"github.com/charmbracelet/glamour"
 	"github.com/spf13/cobra"
@@ -24,6 +26,7 @@ var (
 	configFile      string
 	verbose         bool
 	intitPullInDays int
+	slackEnabled    bool
 )
 
 var rootCmd = &cobra.Command{
@@ -82,6 +85,14 @@ func start() error {
 		return fmt.Errorf("failed to create similarity engine: %w", err)
 	}
 
+	var slackClient *slack.Slack
+	if slackEnabled {
+		slackClient, err = slack.New()
+		if err != nil {
+			return fmt.Errorf("failed to create slack client: %w", err)
+		}
+	}
+
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -117,6 +128,12 @@ func start() error {
 						continue
 					}
 					printSummaryToStdout(article)
+
+					if slackClient != nil {
+						if err := slackClient.SendWebhook(ctx, article.FormatAsSlackMrkdwn()); err != nil {
+							log.WithFields(articleLogFields).Errorf("failed to send slack webhook: %v", err)
+						}
+					}
 				}
 
 				// fmt.Println("Article:", article.Link)
@@ -173,7 +190,7 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "config.yml", "config file path")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().IntVarP(&intitPullInDays, "init-pull", "i", 0, "initial pull in days (default behavior is we analyze only new articles)")
-
+	rootCmd.PersistentFlags().BoolVarP(&slackEnabled, "slack", "s", false, fmt.Sprintf("send notifications to slack (requires %s env variable)", constants.EnvSlackWebhookUrl))
 	rootCmd.Flags().SortFlags = false
 
 	if err := rootCmd.Execute(); err != nil {
