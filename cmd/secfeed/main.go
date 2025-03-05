@@ -15,11 +15,11 @@ import (
 	"github.com/alex-ilgayev/secfeed/pkg/similarity"
 	"github.com/alex-ilgayev/secfeed/pkg/slack"
 	"github.com/alex-ilgayev/secfeed/pkg/types"
-	"github.com/charmbracelet/glamour"
-	"github.com/spf13/cobra"
 
 	nested "github.com/antonfisher/nested-logrus-formatter"
+	"github.com/charmbracelet/glamour"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -27,6 +27,9 @@ var (
 	verbose         bool
 	intitPullInDays int
 	slackEnabled    bool
+	modelFiltering  string
+	modelSummary    string
+	llmClient       llm.LLMClientType = llm.OpenAI
 )
 
 var rootCmd = &cobra.Command{
@@ -53,14 +56,14 @@ func setupLog() {
 		log.SetLevel(log.InfoLevel)
 	}
 	log.SetFormatter(&nested.Formatter{
-		HideKeys:         true,
+		HideKeys:         false,
 		TimestampFormat:  "2006-01-02 15:04:05",
 		NoUppercaseLevel: true,
 	})
 }
 
 func start() error {
-	asciiArt()
+	banner()
 	log.Info("Starting secfeed!")
 
 	ctx, _ := signal.SetupHandler()
@@ -75,7 +78,7 @@ func start() error {
 		return fmt.Errorf("failed to create feed: %w", err)
 	}
 
-	llmClient, err := llm.NewClient()
+	llmClient, err := llm.NewClient(ctx, llmClient, modelFiltering, modelSummary)
 	if err != nil {
 		return fmt.Errorf("failed to create LLM client: %w", err)
 	}
@@ -117,6 +120,7 @@ func start() error {
 					log.WithFields(articleLogFields).Errorf("failed to check category similarity: %v", err)
 					continue
 				}
+				article.CatRelevance = catMatches
 
 				for _, catMatch := range catMatches {
 					log.WithFields(articleLogFields).Infof("category %s is similar with relevance %d (Explanation: %s)", catMatch.Category, catMatch.Relevance, catMatch.Explanation)
@@ -191,6 +195,9 @@ func main() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().IntVarP(&intitPullInDays, "init-pull", "i", 0, "initial pull in days (default behavior is we analyze only new articles)")
 	rootCmd.PersistentFlags().BoolVarP(&slackEnabled, "slack", "s", false, fmt.Sprintf("send notifications to slack (requires %s env variable)", constants.EnvSlackWebhookUrl))
+	rootCmd.PersistentFlags().StringVar(&modelFiltering, "model-filtering", "gpt-4o-mini", "model name that will be used for initial fitlering (preferably a smaller model)")
+	rootCmd.PersistentFlags().StringVar(&modelSummary, "model-summary", "gpt-4o", "model name that will be used for summarization")
+	rootCmd.PersistentFlags().VarP(&llmClient, "llm", "l", "LLM client to use (openai - default, or ollama)")
 	rootCmd.Flags().SortFlags = false
 
 	if err := rootCmd.Execute(); err != nil {
@@ -209,7 +216,7 @@ func printSummaryToStdout(article types.Article) {
 	fmt.Print(out)
 }
 
-func asciiArt() {
+func banner() {
 	fmt.Println("                                                                          ")
 	fmt.Println("  /$$$$$$                      /$$$$$$$$                         /$$ /$$")
 	fmt.Println(" /$$__  $$                    | $$_____/                        | $$| $$")

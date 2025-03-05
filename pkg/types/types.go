@@ -15,7 +15,8 @@ type Article struct {
 	Published   time.Time
 
 	// Enriched later through LLM
-	Summary string
+	Summary      string
+	CatRelevance []CategoryRelevance
 }
 
 func (a Article) String() string {
@@ -24,14 +25,36 @@ func (a Article) String() string {
 }
 
 func (a Article) FormatAsMarkdown() string {
-	// Summary is already in markdown format
-	return fmt.Sprintf("# %s\n\n%s\n\nRead more [here](%s)", a.Title, a.Summary, a.Link)
+	t := fmt.Sprintf("# %s\n\n%s\n\nRead more [here](%s)", a.Title, a.Summary, a.Link)
+
+	t = t + "\n\n---\n\n"
+	t = t + "**Debug info:**\n\n"
+	t = t + fmt.Sprintf("**len(Description):** %d\n", len(a.Description))
+	t = t + fmt.Sprintf("**len(Content):** %d\n\n", len(a.Content))
+	for _, cr := range a.CatRelevance {
+		t = t + fmt.Sprintf("**Category:** %s\n\n**Relevance:** %d\n\n**Explanation**: %s\n\n", cr.Category, cr.Relevance, cr.Explanation)
+	}
+	t = t + "\n\n---\n\n"
+
+	return t
 }
 
 func (a Article) FormatAsSlackMrkdwn() string {
 	a.Summary = strings.ReplaceAll(a.Summary, "- ", "• ")
 	a.Summary = strings.ReplaceAll(a.Summary, "**", "*")
-	return fmt.Sprintf("*%s*\n\n%s\n\nRead more <%s|here>", a.Title, a.Summary, a.Link)
+
+	t := fmt.Sprintf("*%s*\n\n%s\n\nRead more <%s|here>", a.Title, a.Summary, a.Link)
+
+	t = t + "\n---\n"
+	t = t + "*Debug info:*\n"
+	t = t + fmt.Sprintf("*len(Description):* %d\n", len(a.Description))
+	t = t + fmt.Sprintf("*len(Content):* %d\n", len(a.Content))
+	for _, cr := range a.CatRelevance {
+		t = t + fmt.Sprintf("*Category:* %s\n*Relevance:* %d\n*Explanation*: %s\n\n", cr.Category, cr.Relevance, cr.Explanation)
+	}
+	t = t + "\n---\n"
+
+	return t
 }
 
 // CategoryRelevance represents the relevance of a category to an article.
