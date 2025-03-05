@@ -14,7 +14,7 @@ import (
 
 const (
 	embeddingsMaxTextLength = 8000
-	llmInputMaxTextLength   = 2000
+	llmInputMaxTextLength   = 40000
 
 	llmMaxCompletionTokens = 2000
 )
@@ -85,7 +85,7 @@ func (c *Client) ExtractCategories(ctx context.Context, article types.Article) (
 	userPrompt := fmt.Sprintf("Title: %s\nContent: %s\nCategories: %v", article.Title, article.Content, article.Categories)
 
 	if len(userPrompt)+len(systemPrompt) > llmInputMaxTextLength {
-		return nil, fmt.Errorf("input text for category extraction is too long")
+		return nil, fmt.Errorf("input text for category extraction is too long (%d)", len(userPrompt)+len(systemPrompt))
 	}
 
 	resp, err := c.client.ChatCompletion(
@@ -130,7 +130,7 @@ Your goal is to help readers quickly grasp the essence of the articles while pre
 	userPrompt := fmt.Sprintf("Title: %s\nContent: %s\nCategories: %v", article.Title, article.Content, article.Categories)
 
 	if len(systemPrompt)+len(userPrompt) > llmInputMaxTextLength {
-		return "", fmt.Errorf("input text for summarization is too long")
+		return "", fmt.Errorf("input text for summarization is too long (%d)", len(systemPrompt)+len(userPrompt))
 	}
 
 	resp, err := c.client.ChatCompletion(
@@ -174,7 +174,7 @@ Categories:
 	userPrompt = "Below is the article to evaluate:\n\n" + userPrompt
 
 	if len(systemPrompt)+len(userPrompt) > llmInputMaxTextLength {
-		return nil, fmt.Errorf("input text for category matching is too long")
+		return nil, fmt.Errorf("input text for category matching is too long (%d)", len(systemPrompt)+len(userPrompt))
 	}
 
 	resp, err := c.client.ChatCompletion(

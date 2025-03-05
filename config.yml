@@ -3,20 +3,18 @@ categories:
     description: Articles about software supply chain security, including best practices, tools, and case studies.
   - name: CI/CD Security
     description: Articles about securing continuous integration and continuous deployment (CI/CD) pipelines, including best practices, tools, and case studies.
-  - name: Application Security
-    description: Articles about application security, ASPM, secure coding practices, vulnerability management, and secure software development lifecycles.
-  - name: Malware Analysis
-    description: Articles about malware analysis techniques, tools, and case studies.
-  - name: Threat Intelligence
-    description: Articles about threat intelligence, including threat actors, tactics, techniques, and procedures (TTPs), indicators of compromise (IOCs), and threat hunting.
+  # - name: Application Security
+  # description: Articles about application security, ASPM, secure coding practices, vulnerability management, and secure software development lifecycles.
+  # - name: Malware Analysis
+  # description: Articles about malware analysis techniques, tools, and case studies.
+  # - name: Threat Intelligence
+  # description: Articles about threat intelligence, including threat actors, tactics, techniques, and procedures (TTPs), indicators of compromise (IOCs), and threat hunting.
 similarity_threshold: 7
 rss_feed:
   - url: https://www.wiz.io/feed/rss.xml
     name: Wiz Blog
   - url: https://krebsonsecurity.com/feed/
     name: Krebs on Security
-  - url: https://www.schneier.com/blog/atom.xml
-    name: Schneier on Security
   - url: https://feeds.feedburner.com/TheHackersNews
     name: The Hacker News
   - url: https://www.bleepingcomputer.com/feed/
@@ -49,20 +47,14 @@ rss_feed:
     name: Fortinet Threat Research
   - url: https://blog.checkpoint.com/feed/
     name: Check Point Blog
-  - url: https://www.mcafee.com/blogs/feed/
-    name: McAfee Blogs
   - url: https://blog.rapid7.com/feed/
     name: Rapid7 Blog
   - url: https://www.kaspersky.com/blog/feed/
     name: Kaspersky Lab Blog
   - url: https://www.sentinelone.com/blog/feed/
     name: SentinelOne Blog
-  - url: https://www.varonis.com/blog/feed/
-    name: Varonis Blog
   - url: https://www.tenable.com/blog/feed
     name: Tenable Blog
-  - url: https://www.tenable.com/security/research/feed
-    name: Tenable Research Advisories
   - url: https://www.veracode.com/blog/feed
     name: Veracode Blog
   - url: https://www.digitalshadows.com/blog-and-research/feed/
@@ -71,15 +63,39 @@ rss_feed:
     name: Recorded Future Blog
   - url: https://www.tripwire.com/state-of-security/feed/
     name: Tripwire Blog
+  - url: https://arcticwolf.com/feed/
+    name: Arctic Wolf Blog
   - url: https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v
     name: Google Threat Intelligence (Mandiant)
+  - url: https://www.crowdstrike.com/blog/feed/
+    name: CrowdStrike Blog
+# Can't parse the summary
+# - url: https://www.schneier.com/blog/atom.xml
+# name: Schneier on Security
+# - url: https://www.tenable.com/security/research/feed
+#   name: Tenable Research Advisories
 
-  # Empty contents
-  # - url: https://www.crowdstrike.com/blog/feed/
-  # name: CrowdStrike Blog
-  # - url: https://arcticwolf.com/feed/
-  # name: Arctic Wolf Blog
-  # - url: https://isc.sans.edu/rssfeed.xml
-  # name: SANS Internet Storm Center
-  # - url: https://www.darkreading.com/rss.xml
-  # name: Dark Reading
+# Parse errors
+# - url: https://www.mcafee.com/blogs/feed/
+# name: McAfee Blogs
+
+# Cloudflare
+# - url: https://www.varonis.com/blog/feed/
+#   name: Varonis Blog
+# - url: https://www.darkreading.com/rss.xml
+#   name: Dark Reading
+
+# redability failed to parse the contents:
+#
+# URL:  https://thehackernews.com/2025/03/chinese-apt-lotus-panda-targets.html
+# len textContent:  0
+# len content:  0
+
+# URL:  https://www.bleepingcomputer.com/news/security/fake-bianlian-ransom-notes-mailed-to-us-ceos-in-postal-mail-scam/
+# len textContent:  0
+# len content:  0
+
+# URL:  https://www.securityweek.com/north-korean-fake-it-workers-pose-as-blockchain-developers-on-github/
+# len textContent:  0
+# len content:  0
+

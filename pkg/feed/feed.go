@@ -1,10 +1,12 @@
 package feed
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/alex-ilgayev/secfeed/pkg/config"
 	"github.com/alex-ilgayev/secfeed/pkg/types"
+	"github.com/go-shiori/go-readability"
 	"github.com/mmcdole/gofeed"
 	log "github.com/sirupsen/logrus"
 )
@@ -64,16 +66,30 @@ func (f *Feed) collect(from time.Time) ([]types.Article, error) {
 			if item.PublishedParsed != nil {
 				a.Published = *item.PublishedParsed
 			} else {
-				log.WithFields(logFields).Warn("Published date is nil")
-				continue
+				// Special case with CrowdStrike feed.
+				t, err := time.Parse("Jan 2, 2006 15:04:05-0700", item.Published)
+				if err != nil {
+					log.WithFields(logFields).Warn("Published date is nil")
+					continue
+				} else {
+					a.Published = t
+				}
 			}
 
-			// Doing some alignment between different feeds.
-			a = cleanArticleItem(a)
+			// Fetching article content.
+			a, err = enrichArticleItem(a)
+			if err != nil {
+				log.WithFields(logFields).Warnf("Failed to enrich article: %v", err)
+
+				// We can leave without the content for now.
+				// the analysis will be less efficient though.
+			}
 
 			if a.Published.After(from) {
 				articles = append(articles, a)
 			}
+
+			break
 		}
 	}
 
@@ -117,22 +133,30 @@ func (f *Feed) fetchFeeds() {
 	}
 }
 
-func cleanArticleItem(a types.Article) types.Article {
-	// Content is actually a description
-	if a.Content != "" && a.Content == a.Description {
-		a.Content = ""
-	}
-
-	// Content is actually a description no. 2
-	if a.Description == "" && len(a.Content) < 200 {
+func enrichArticleItem(a types.Article) (types.Article, error) {
+	// Sometimes the content is actually a description
+	if a.Description == "" && a.Content != "" {
 		a.Description = a.Content
-		a.Content = ""
 	}
 
-	// This isn't really content. Better without it, and fetch the URL manually.
-	if len(a.Content) < 300 {
-		a.Content = ""
+	// a description that is too long, isn't a description, and won't help us.
+	if len(a.Description) > 1000 {
+		a.Description = ""
 	}
 
-	return a
+	// We don't trust the content field, so we fetching the article manually.
+	content, err := readability.FromURL(a.Link, 5*time.Second)
+	if err != nil {
+		return a, fmt.Errorf("failed to extract text content from html: %w", err)
+	}
+
+	if len(content.Content) == 0 {
+		// This can happned for few feeds, need to fix it.
+		return a, fmt.Errorf("failed to extract text content from html (zero content)")
+	}
+
+	a.Content = content.TextContent
+	fmt.Println("fetched text content len: ", len(content.TextContent))
+
+	return a, nil
 }
