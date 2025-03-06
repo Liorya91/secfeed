@@ -1,14 +1,12 @@
 # SecFeed
 
-TODOS:
+## TODOS:
 
-Important:
+### Important:
 
-- Do a shorter summary
 - Checking minimal article content that fits as an article
-- Extract article from URLs, when go-readability fails.
 
-Nice to have:
+### Nice to have:
 
 - Reddit feed.
 - Linkedin feed.
@@ -16,4 +14,11 @@ Nice to have:
 - Add option to choose between LLM filtering and embedding filtering
 - Add tl;dr sec to feeds?
 - Caching
-- Ability to bypass Cloudflare when fetching URLs
+- Ability to bypass Cloudflare when fetching URLs - needed for some feeds.
+- Check more feeds:
+  - security boulevard
+  - bank info security
+  - information week
+  - infosecurity magazine
+  - computerweekly
+  - hackread

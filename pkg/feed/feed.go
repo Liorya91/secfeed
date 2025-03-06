@@ -2,6 +2,9 @@ package feed
 
 import (
 	"fmt"
+	"io"
+	"net/http"
+	nurl "net/url"
 	"time"
 
 	"github.com/alex-ilgayev/secfeed/pkg/config"
@@ -143,11 +146,27 @@ func enrichArticleItem(a types.Article) (types.Article, error) {
 	}
 
 	// We don't trust the content field, so we fetching the article manually.
-	content, err := readability.FromURL(a.Link, 5*time.Second)
+	htmlReader, err := fetchURL(a.Link)
+	if err != nil {
+		return a, nil
+	}
+	defer htmlReader.Close()
+
+	// Using readability library to extract the interesting content.
+	// Without that it will blow the number of tokens (by magnitude)
+	parsedURL, err := nurl.ParseRequestURI(a.Link)
+	if err != nil {
+		return a, fmt.Errorf("failed to parse URL: %w", err)
+	}
+
+	content, err := readability.FromReader(htmlReader, parsedURL)
 	if err != nil {
 		return a, fmt.Errorf("failed to extract text content from html: %w", err)
 	}
 
+	// We have two type of contents,
+	// 1. TextContent - only the text and white spaces.
+	// 2. Content - the entire content with html tags.
 	if len(content.Content) == 0 {
 		// This can happned for few feeds, need to fix it.
 		return a, fmt.Errorf("failed to extract text content from html (zero content)")
@@ -156,4 +175,36 @@ func enrichArticleItem(a types.Article) (types.Article, error) {
 	a.Content = content.TextContent
 
 	return a, nil
+}
+
+// Fetches the article content so LLM can be smarter.
+// Usually RSS feed don't have the entire content.
+// Reader needs to be closed after usage.
+func fetchURL(url string) (io.ReadCloser, error) {
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch the page: %w", err)
+	}
+
+	// Set headers to mimic a browser.
+	// This is essential for some websites.
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "+
+		"AppleWebKit/537.36 (KHTML, like Gecko) "+
+		"Chrome/90.0.4430.93 Safari/537.36")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
+	req.Header.Set("Connection", "keep-alive")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalf("failed to fetch the page: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch with status code: %d", resp.StatusCode)
+	}
+
+	return resp.Body, nil
 }

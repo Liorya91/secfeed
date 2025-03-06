@@ -3,8 +3,8 @@ categories:
     description: Articles about software supply chain security, including best practices, tools, and case studies.
   - name: CI/CD Security
     description: Articles about securing continuous integration and continuous deployment (CI/CD) pipelines, including best practices, tools, and case studies.
-  # - name: Application Security
-  # description: Articles about application security, ASPM, secure coding practices, vulnerability management, and secure software development lifecycles.
+  - name: Application Security
+    description: Articles about application security, ASPM, secure coding practices, vulnerability management, and secure software development lifecycles.
   # - name: Malware Analysis
   # description: Articles about malware analysis techniques, tools, and case studies.
   # - name: Threat Intelligence
@@ -82,18 +82,4 @@ rss_feed:
 #   name: Varonis Blog
 # - url: https://www.darkreading.com/rss.xml
 #   name: Dark Reading
-
-# redability failed to parse the contents:
-#
-# URL:  https://thehackernews.com/2025/03/chinese-apt-lotus-panda-targets.html
-# len textContent:  0
-# len content:  0
-
-# URL:  https://www.bleepingcomputer.com/news/security/fake-bianlian-ransom-notes-mailed-to-us-ceos-in-postal-mail-scam/
-# len textContent:  0
-# len content:  0
-
-# URL:  https://www.securityweek.com/north-korean-fake-it-workers-pose-as-blockchain-developers-on-github/
-# len textContent:  0
-# len content:  0
 
