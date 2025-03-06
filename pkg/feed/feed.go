@@ -76,20 +76,18 @@ func (f *Feed) collect(from time.Time) ([]types.Article, error) {
 				}
 			}
 
-			// Fetching article content.
-			a, err = enrichArticleItem(a)
-			if err != nil {
-				log.WithFields(logFields).Warnf("Failed to enrich article: %v", err)
-
-				// We can leave without the content for now.
-				// the analysis will be less efficient though.
-			}
-
 			if a.Published.After(from) {
+				// Fetching article content.
+				a, err = enrichArticleItem(a)
+				if err != nil {
+					log.WithFields(logFields).Warnf("Failed to enrich article: %v", err)
+
+					// We can leave without the content for now.
+					// the analysis will be less efficient though.
+				}
+
 				articles = append(articles, a)
 			}
-
-			break
 		}
 	}
 
@@ -156,7 +154,6 @@ func enrichArticleItem(a types.Article) (types.Article, error) {
 	}
 
 	a.Content = content.TextContent
-	fmt.Println("fetched text content len: ", len(content.TextContent))
 
 	return a, nil
 }

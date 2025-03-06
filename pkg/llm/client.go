@@ -117,17 +117,20 @@ func (c *Client) Summarize(ctx context.Context, article types.Article) (string, 
 
 1. Accuracy and Fidelity: Extract and convey the key points, methodologies, results, and conclusions as presented in the original text without introducing new interpretations.
 2. Clarity and Brevity: Create summaries that are succinct and understandable even for complex topics. Use plain language and avoid unnecessary jargon.
-3. Structure: Organize the summary logically. Consider using bullet points or short paragraphs to highlight:
-   - The main objective or problem addressed.
-   - The methodology or approach taken.
-   - Key findings and results.
-   - Conclusions or implications.
-4. Neutrality: Maintain an objective tone. Do not include personal opinions or commentary.
-5. Adaptability: Adjust the level of detail based on the article’s complexity and length. For highly technical or detailed articles, ensure the summary captures essential data without oversimplification.
-6. Uncertainty: If certain parts of the article are ambiguous or contain conflicting information, note these uncertainties clearly in the summary.
+3. Neutrality: Maintain an objective tone. Do not include personal opinions or commentary.
+4. Adaptability: Adjust the level of detail based on the article's complexity and length. For highly technical or detailed articles, ensure the summary captures essential data without oversimplification.
+5. Uncertainty: If certain parts of the article are ambiguous or contain conflicting information, note these uncertainties clearly in the summary.
 
-Your goal is to help readers quickly grasp the essence of the articles while preserving the integrity of the original content.`
-	userPrompt := fmt.Sprintf("Title: %s\nContent: %s\nCategories: %v", article.Title, article.Content, article.Categories)
+Your goal is to help readers quickly grasp the essence of the articles while preserving the integrity of the original content.
+
+Output instructions:
+- Structure: Your output structure should contain just the bullet points to highlight key findings, methodologies, and conclusions.
+- Length: Aim for a summary length of 3-5 sentences or 75-200 words.
+
+Article details are:
+
+`
+	userPrompt := fmt.Sprintf("Title: %s\nDescription: %s\nContent: %s", article.Title, article.Description, article.Content)
 
 	if len(systemPrompt)+len(userPrompt) > llmInputMaxTextLength {
 		return "", fmt.Errorf("input text for summarization is too long (%d)", len(systemPrompt)+len(userPrompt))

@@ -187,8 +187,6 @@ func (c *Client) ChatCompletion(ctx context.Context, model string, systemMsg, us
 		return "", fmt.Errorf("failed to parse ChatCompletionResponse")
 	}
 
-	fmt.Printf("Ollama response: %s\n", chatResp.Message.Content)
-
 	log.WithFields(log.Fields{"model": chatResp.Model}).Debug("Ollama API ChatCompletion call")
 
 	return chatResp.Message.Content, nil

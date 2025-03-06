@@ -74,8 +74,6 @@ rss_feed:
 # name: Schneier on Security
 # - url: https://www.tenable.com/security/research/feed
 #   name: Tenable Research Advisories
-
-# Parse errors
 # - url: https://www.mcafee.com/blogs/feed/
 # name: McAfee Blogs
 
