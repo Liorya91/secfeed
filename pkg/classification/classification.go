@@ -11,51 +11,26 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type ClassificationEngineType string
-
-// Implementing the pflag.Value interface for ClassificationEngine
-func (l *ClassificationEngineType) String() string {
-	return string(*l)
-}
-
-// Implementing the pflag.Value interface for ClassificationEngine
-func (l *ClassificationEngineType) Set(value string) error {
-	*l = ClassificationEngineType(value)
-	return nil
-}
-
-// Implementing the pflag.Value interface for ClassificationEngine
-func (l *ClassificationEngineType) Type() string {
-	return "classificationEngineType"
-}
-
-const (
-	LLM        ClassificationEngineType = "llm"
-	Embeddings ClassificationEngineType = "embeddings"
-)
-
 type ClassificationEngine struct {
-	clsType ClassificationEngineType
-	client  *llm.Client
+	client *llm.Client
+	cfg    config.Classification
 
 	categories []config.Category
-	threshold  float32
 
 	// Encoded categories for similarity comparison
 	// Only used when clsType == Embeddings
 	encCategories map[string][]float32
 }
 
-func New(ctx context.Context, classificationType ClassificationEngineType, client *llm.Client, categories []config.Category, threshold float32) (*ClassificationEngine, error) {
+func New(ctx context.Context, cfg config.Classification, client *llm.Client, categories []config.Category) (*ClassificationEngine, error) {
 	c := &ClassificationEngine{
-		clsType:       classificationType,
 		client:        client,
+		cfg:           cfg,
 		categories:    categories,
-		threshold:     threshold,
 		encCategories: make(map[string][]float32, len(categories)),
 	}
 
-	if classificationType == Embeddings {
+	if cfg.Engine == config.ClassificationEngineTypeEmbeddings {
 		var err error
 		// If choose classification using embeddings, we need to pre-encode the input categories.
 		log.WithFields(log.Fields{"categories": categories}).Info("Pre-encoding input categories")
@@ -69,12 +44,12 @@ func New(ctx context.Context, classificationType ClassificationEngineType, clien
 }
 
 func (c *ClassificationEngine) Classify(ctx context.Context, article types.Article) ([]types.CategoryRelevance, error) {
-	if c.clsType == LLM {
+	if c.cfg.Engine == config.ClassificationEngineTypeLLM {
 		return c.classifyWithLLM(ctx, article)
-	} else if c.clsType == Embeddings {
+	} else if c.cfg.Engine == config.ClassificationEngineTypeEmbeddings {
 		return c.classifyWithEmbeddings(ctx, article)
 	} else {
-		return nil, fmt.Errorf("unknown classification engine type: %s", c.clsType)
+		return nil, fmt.Errorf("unknown classification engine type: %s", c.cfg.Engine)
 	}
 }
 
@@ -94,7 +69,7 @@ func (c *ClassificationEngine) classifyWithLLM(ctx context.Context, article type
 
 	matchedCategories := make([]types.CategoryRelevance, 0)
 	for _, match := range catMatching {
-		if match.Relevance >= c.threshold {
+		if match.Relevance >= c.cfg.Threshold {
 			matchedCategories = append(matchedCategories, match)
 		}
 	}
@@ -120,7 +95,7 @@ func (c *ClassificationEngine) classifyWithEmbeddings(ctx context.Context, artic
 			"relevance": relevance,
 		}).Debug("Category match")
 
-		if relevance >= c.threshold {
+		if relevance >= c.cfg.Threshold {
 			matchedCategories = append(matchedCategories, types.CategoryRelevance{
 				Category:    name,
 				Relevance:   relevance,

@@ -27,29 +27,6 @@ const (
 	embeddingsOverlap        = 200
 )
 
-type LLMClientType string
-
-// Implementing the pflag.Value interface for LLMClientType
-func (l *LLMClientType) String() string {
-	return string(*l)
-}
-
-// Implementing the pflag.Value interface for LLMClientType
-func (l *LLMClientType) Set(value string) error {
-	*l = LLMClientType(value)
-	return nil
-}
-
-// Implementing the pflag.Value interface for LLMClientType
-func (l *LLMClientType) Type() string {
-	return "llmClientType"
-}
-
-const (
-	OpenAI LLMClientType = "openai"
-	Ollama LLMClientType = "ollama"
-)
-
 type LLMClient interface {
 	ChatCompletion(ctx context.Context, model string, systemMsg, userMsg string, temperature float32, maxTokens int, jsonFormat bool) (string, error)
 	CreateEmbeddings(ctx context.Context, model string, texts []string) ([][]float32, error)
@@ -57,36 +34,32 @@ type LLMClient interface {
 
 // Client is a generic interface that wraps OpenAI at the moment.
 type Client struct {
-	client       LLMClient
-	modelClsLLM  string
-	modelClsEmb  string
-	modelSummary string
+	client LLMClient
+	cfg    config.LLM
 }
 
-func NewClient(ctx context.Context, llmType LLMClientType, modelClsLLM, modelClsEmb, modelSummary string) (*Client, error) {
+func NewClient(ctx context.Context, cfg config.LLM) (*Client, error) {
 	var llmClient LLMClient
 	var err error
 
-	switch llmType {
-	case OpenAI:
+	switch cfg.Client {
+	case config.LLMClientTypeOpenAI:
 		llmClient, err = openai.NewClient()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create OpenAI client: %w", err)
 		}
-	case Ollama:
-		llmClient, err = ollama.NewClient(ctx, []string{modelClsLLM, modelSummary})
+	case config.LLMClientTypeOllama:
+		llmClient, err = ollama.NewClient(ctx, []string{cfg.Classification.Model, cfg.Summary.Model})
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Ollama client: %w", err)
 		}
 	default:
-		return nil, fmt.Errorf("unsupported LLM client: %s", llmClient)
+		return nil, fmt.Errorf("unsupported LLM client: %s", cfg.Client)
 	}
 
 	return &Client{
-		client:       llmClient,
-		modelClsLLM:  modelClsLLM,
-		modelClsEmb:  modelClsEmb,
-		modelSummary: modelSummary,
+		client: llmClient,
+		cfg:    cfg,
 	}, nil
 }
 
@@ -101,7 +74,7 @@ func (c *Client) ExtractCategories(ctx context.Context, article types.Article) (
 
 	resp, err := c.client.ChatCompletion(
 		ctx,
-		c.modelClsLLM,
+		c.cfg.Classification.Model,
 		systemPrompt,
 		userPrompt,
 		0.2, // Low temperature for more deterministic results
@@ -149,7 +122,7 @@ Article details are:
 
 	resp, err := c.client.ChatCompletion(
 		ctx,
-		c.modelSummary,
+		c.cfg.Summary.Model,
 		systemPrompt,
 		userPrompt,
 		0.5,
@@ -193,7 +166,7 @@ Categories:
 
 	resp, err := c.client.ChatCompletion(
 		ctx,
-		c.modelClsLLM,
+		c.cfg.Classification.Model,
 		systemPrompt,
 		userPrompt,
 		0, // Low temperature for more deterministic results
@@ -223,7 +196,7 @@ func (c *Client) EncodeCategories(ctx context.Context, categories []config.Categ
 		texts[i] = strings.ToLower(texts[i])
 	}
 
-	embeddings, err := c.client.CreateEmbeddings(ctx, c.modelClsEmb, texts)
+	embeddings, err := c.client.CreateEmbeddings(ctx, c.cfg.Classification.Model, texts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get embeddings for categories: %w", err)
 	}
@@ -257,7 +230,7 @@ func (c *Client) EncodeArticle(ctx context.Context, article types.Article) ([]fl
 	// because we assume it needed for every LLM client.
 	// If the text is within the maximum allowed length, process directly.
 	if len(text) <= embeddingsMaxTextLength {
-		embs, err := c.client.CreateEmbeddings(ctx, c.modelClsEmb, []string{text})
+		embs, err := c.client.CreateEmbeddings(ctx, c.cfg.Classification.Model, []string{text})
 		if err != nil {
 			return nil, err
 		}
@@ -266,7 +239,7 @@ func (c *Client) EncodeArticle(ctx context.Context, article types.Article) ([]fl
 	} else {
 		// For texts that are too long, split into chunks.
 		chunks := chunkText(text, embeddingsChunkSize, embeddingsOverlap)
-		chunkEmbeddings, err := c.client.CreateEmbeddings(ctx, c.modelClsEmb, chunks)
+		chunkEmbeddings, err := c.client.CreateEmbeddings(ctx, c.cfg.Classification.Model, chunks)
 		if err != nil {
 			return nil, err
 		}
