@@ -191,3 +191,7 @@ func (c *Client) ChatCompletion(ctx context.Context, model string, systemMsg, us
 
 	return chatResp.Message.Content, nil
 }
+
+func (c *Client) CreateEmbeddings(ctx context.Context, model string, texts []string) ([][]float32, error) {
+	return nil, fmt.Errorf("not implemented")
+}

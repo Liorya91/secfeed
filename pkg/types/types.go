@@ -32,7 +32,7 @@ func (a Article) FormatAsMarkdown() string {
 	t = t + fmt.Sprintf("**len(Description):** %d\n", len(a.Description))
 	t = t + fmt.Sprintf("**len(Content):** %d\n\n", len(a.Content))
 	for _, cr := range a.CatRelevance {
-		t = t + fmt.Sprintf("**Category:** %s\n\n**Relevance:** %d\n\n**Explanation**: %s\n\n", cr.Category, cr.Relevance, cr.Explanation)
+		t = t + fmt.Sprintf("**Category:** %s\n\n**Relevance:** %.1f\n\n**Explanation**: %s\n\n", cr.Category, cr.Relevance, cr.Explanation)
 	}
 	t = t + "\n\n---\n\n"
 
@@ -50,7 +50,7 @@ func (a Article) FormatAsSlackMrkdwn() string {
 	t = t + fmt.Sprintf("*len(Description):* %d\n", len(a.Description))
 	t = t + fmt.Sprintf("*len(Content):* %d\n", len(a.Content))
 	for _, cr := range a.CatRelevance {
-		t = t + fmt.Sprintf("*Category:* %s\n*Relevance:* %d\n*Explanation*: %s\n\n", cr.Category, cr.Relevance, cr.Explanation)
+		t = t + fmt.Sprintf("*Category:* %s\n*Relevance:* %.1f\n*Explanation*: %s\n\n", cr.Category, cr.Relevance, cr.Explanation)
 	}
 	t = t + "\n---\n"
 
@@ -60,7 +60,7 @@ func (a Article) FormatAsSlackMrkdwn() string {
 // CategoryRelevance represents the relevance of a category to an article.
 // Relevance is a number between 0 (not relevant) to 10 (very relevant).
 type CategoryRelevance struct {
-	Category    string `json:"category"`
-	Relevance   int    `json:"relevance"`
-	Explanation string `json:"explanation"`
+	Category    string  `json:"category"`
+	Relevance   float32 `json:"relevance"`
+	Explanation string  `json:"explanation,omitempty"`
 }

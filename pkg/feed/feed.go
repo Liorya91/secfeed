@@ -199,7 +199,7 @@ func fetchURL(url string) (io.ReadCloser, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalf("failed to fetch the page: %v", err)
+		return nil, fmt.Errorf("failed to fetch the page: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {

@@ -7,12 +7,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alex-ilgayev/secfeed/pkg/classification"
 	"github.com/alex-ilgayev/secfeed/pkg/config"
 	"github.com/alex-ilgayev/secfeed/pkg/constants"
 	"github.com/alex-ilgayev/secfeed/pkg/feed"
 	"github.com/alex-ilgayev/secfeed/pkg/llm"
 	"github.com/alex-ilgayev/secfeed/pkg/signal"
-	"github.com/alex-ilgayev/secfeed/pkg/similarity"
 	"github.com/alex-ilgayev/secfeed/pkg/slack"
 	"github.com/alex-ilgayev/secfeed/pkg/types"
 
@@ -27,9 +27,11 @@ var (
 	verbose         bool
 	intitPullInDays int
 	slackEnabled    bool
-	modelFiltering  string
+	modelClsLLM     string
+	modelClsEmb     string
 	modelSummary    string
-	llmClient       llm.LLMClientType = llm.OpenAI
+	llmClient       llm.LLMClientType                       = llm.OpenAI
+	clsEngineType   classification.ClassificationEngineType = classification.LLM
 )
 
 var rootCmd = &cobra.Command{
@@ -78,14 +80,14 @@ func start() error {
 		return fmt.Errorf("failed to create feed: %w", err)
 	}
 
-	llmClient, err := llm.NewClient(ctx, llmClient, modelFiltering, modelSummary)
+	llmClient, err := llm.NewClient(ctx, llmClient, modelClsLLM, modelClsEmb, modelSummary)
 	if err != nil {
 		return fmt.Errorf("failed to create LLM client: %w", err)
 	}
 
-	similarity, err := similarity.New(ctx, llmClient, cfg.Categories, cfg.SimilarityThreshold)
+	clsEngine, err := classification.New(ctx, clsEngineType, llmClient, cfg.Categories, cfg.ClsThreshold)
 	if err != nil {
-		return fmt.Errorf("failed to create similarity engine: %w", err)
+		return fmt.Errorf("failed to create classification engine: %w", err)
 	}
 
 	var slackClient *slack.Slack
@@ -115,15 +117,16 @@ func start() error {
 				}
 				log.WithFields(articleLogFields).Info("Received article. Analyzing...")
 
-				catMatches, err := similarity.CheckSimilarity(ctx, article)
+				var catMatches []types.CategoryRelevance
+				catMatches, err = clsEngine.Classify(ctx, article)
 				if err != nil {
-					log.WithFields(articleLogFields).Errorf("failed to check category similarity: %v", err)
+					log.WithFields(articleLogFields).Errorf("failed to classify the article: %v", err)
 					continue
 				}
 				article.CatRelevance = catMatches
 
 				for _, catMatch := range catMatches {
-					log.WithFields(articleLogFields).Infof("category %s is similar with relevance %d (Explanation: %s)", catMatch.Category, catMatch.Relevance, catMatch.Explanation)
+					log.WithFields(articleLogFields).Infof("category %s is similar with relevance %.1f (Explanation: %s)", catMatch.Category, catMatch.Relevance, catMatch.Explanation)
 				}
 				if len(catMatches) > 0 {
 					article.Summary, err = llmClient.Summarize(ctx, article)
@@ -195,9 +198,11 @@ func main() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().IntVarP(&intitPullInDays, "init-pull", "i", 0, "initial pull in days (default behavior is we analyze only new articles)")
 	rootCmd.PersistentFlags().BoolVarP(&slackEnabled, "slack", "s", false, fmt.Sprintf("send notifications to slack (requires %s env variable)", constants.EnvSlackWebhookUrl))
-	rootCmd.PersistentFlags().StringVar(&modelFiltering, "model-filtering", "gpt-4o-mini", "model name that will be used for initial fitlering (preferably a smaller model)")
+	rootCmd.PersistentFlags().StringVar(&modelClsLLM, "model-cls-llm", "gpt-4o-mini", "model name that will be used for initial classification if LLM engine was choosed (preferably a smaller model)")
+	rootCmd.PersistentFlags().StringVar(&modelClsEmb, "model-cls-emb", "text-embedding-3-large", "model name that will be used for initial classification if embeddings engine was choosed (preferably a smaller model)")
 	rootCmd.PersistentFlags().StringVar(&modelSummary, "model-summary", "gpt-4o", "model name that will be used for summarization")
 	rootCmd.PersistentFlags().VarP(&llmClient, "llm", "l", "LLM client to use (openai - default, or ollama)")
+	rootCmd.PersistentFlags().Var(&clsEngineType, "cls-type", "classification engine to use (llm - default, or embeddings)")
 	rootCmd.Flags().SortFlags = false
 
 	if err := rootCmd.Execute(); err != nil {

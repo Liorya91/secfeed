@@ -3,7 +3,10 @@ package llm
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/alex-ilgayev/secfeed/pkg/config"
 	"github.com/alex-ilgayev/secfeed/pkg/llm/ollama"
@@ -17,6 +20,11 @@ const (
 	llmInputMaxTextLength   = 40000
 
 	llmMaxCompletionTokens = 2000
+
+	embeddingsTextMaxSize    = 8000
+	embeddingsContentMaxSize = 1500
+	embeddingsChunkSize      = 1000
+	embeddingsOverlap        = 200
 )
 
 type LLMClientType string
@@ -44,16 +52,18 @@ const (
 
 type LLMClient interface {
 	ChatCompletion(ctx context.Context, model string, systemMsg, userMsg string, temperature float32, maxTokens int, jsonFormat bool) (string, error)
+	CreateEmbeddings(ctx context.Context, model string, texts []string) ([][]float32, error)
 }
 
 // Client is a generic interface that wraps OpenAI at the moment.
 type Client struct {
-	client         LLMClient
-	modelFiltering string
-	modelSummary   string
+	client       LLMClient
+	modelClsLLM  string
+	modelClsEmb  string
+	modelSummary string
 }
 
-func NewClient(ctx context.Context, llmType LLMClientType, modelFiltering, modelSummary string) (*Client, error) {
+func NewClient(ctx context.Context, llmType LLMClientType, modelClsLLM, modelClsEmb, modelSummary string) (*Client, error) {
 	var llmClient LLMClient
 	var err error
 
@@ -64,7 +74,7 @@ func NewClient(ctx context.Context, llmType LLMClientType, modelFiltering, model
 			return nil, fmt.Errorf("failed to create OpenAI client: %w", err)
 		}
 	case Ollama:
-		llmClient, err = ollama.NewClient(ctx, []string{modelFiltering, modelSummary})
+		llmClient, err = ollama.NewClient(ctx, []string{modelClsLLM, modelSummary})
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Ollama client: %w", err)
 		}
@@ -73,9 +83,10 @@ func NewClient(ctx context.Context, llmType LLMClientType, modelFiltering, model
 	}
 
 	return &Client{
-		client:         llmClient,
-		modelFiltering: modelFiltering,
-		modelSummary:   modelSummary,
+		client:       llmClient,
+		modelClsLLM:  modelClsLLM,
+		modelClsEmb:  modelClsEmb,
+		modelSummary: modelSummary,
 	}, nil
 }
 
@@ -90,7 +101,7 @@ func (c *Client) ExtractCategories(ctx context.Context, article types.Article) (
 
 	resp, err := c.client.ChatCompletion(
 		ctx,
-		c.modelFiltering,
+		c.modelClsLLM,
 		systemPrompt,
 		userPrompt,
 		0.2, // Low temperature for more deterministic results
@@ -152,7 +163,7 @@ Article details are:
 	return resp, nil
 }
 
-func (c *Client) CategoryMatching(ctx context.Context, categoriesToMatch []config.Category, article types.Article) ([]types.CategoryRelevance, error) {
+func (c *Client) CategoryMatchingWithLLM(ctx context.Context, categoriesToMatch []config.Category, article types.Article) ([]types.CategoryRelevance, error) {
 	systemPrompt := `You have a list of categories to evaluate. 
 For each category, determine how relevant the user's article is to that category. 
 
@@ -182,7 +193,7 @@ Categories:
 
 	resp, err := c.client.ChatCompletion(
 		ctx,
-		c.modelFiltering,
+		c.modelClsLLM,
 		systemPrompt,
 		userPrompt,
 		0, // Low temperature for more deterministic results
@@ -202,185 +213,169 @@ Categories:
 	return relevance, nil
 }
 
-// var (
-// 	embeddingsChunkSize = 1000
-// 	embeddingsOverlap   = 200
-// )
+func (c *Client) EncodeCategories(ctx context.Context, categories []config.Category) (map[string][]float32, error) {
+	texts := make([]string, len(categories))
+	for i, cat := range categories {
+		// texts[i] = fmt.Sprintf("%s\n\n%s", cat.Name, cat.Description)
+		// Currently we do not use decription for embeddings.
+		// We should generate synthetic synonyms for each category.
+		texts[i] = cat.Name
+		texts[i] = strings.ToLower(texts[i])
+	}
 
-// // callEmbeddingAPI is a helper that sends texts to the OpenAI API without checking length.
-// func (c *Client) callEmbeddingAPI(ctx context.Context, texts []string) ([][]float32, error) {
-// 	req := openai.EmbeddingRequest{
-// 		Model: embeddingModel,
-// 		Input: texts,
-// 	}
+	embeddings, err := c.client.CreateEmbeddings(ctx, c.modelClsEmb, texts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get embeddings for categories: %w", err)
+	}
 
-// 	resp, err := c.client.CreateEmbeddings(ctx, req)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	if len(embeddings) != len(categories) {
+		return nil, fmt.Errorf("number of embeddings returned does not match number of categories")
+	}
 
-// 	c.tokenUsed[string(embeddingModel)].add(tokenUsed{
-// 		prompt: resp.Usage.PromptTokens,
-// 	})
-// 	log.WithFields(log.Fields{"model": resp.Model, "tokens": resp.Usage.TotalTokens, "total_cost": c.totalCost()}).Debug("OpenAI API CreateEmbeddings call")
+	encCategories := make(map[string][]float32, len(categories))
+	for i, cat := range categories {
+		encCategories[cat.Name] = embeddings[i]
+	}
 
-// 	if len(resp.Data) != len(texts) {
-// 		return nil, fmt.Errorf("number of embeddings returned does not match number of texts")
-// 	}
+	return encCategories, nil
+}
 
-// 	embeddings := make([][]float32, len(texts))
-// 	for i, embedding := range resp.Data {
-// 		embeddings[i] = embedding.Embedding
-// 	}
+func (c *Client) EncodeArticle(ctx context.Context, article types.Article) ([]float32, error) {
+	trimmedContent := article.Content
+	if len(trimmedContent) > embeddingsTextMaxSize {
+		trimmedContent = article.Content[:embeddingsTextMaxSize]
+	}
 
-// 	return embeddings, nil
-// }
+	text := fmt.Sprintf("%s\n\n%s\n\n%s", article.Title, article.Description, trimmedContent)
+	text = cleanTextForEmbeddings(text)
 
-// // Embedding computes embeddings for each text in the input slice.
-// // If a text exceeds embeddingsMaxTextLength, it will be split into smaller chunks,
-// // embeddings for each chunk will be computed, and then averaged.
-// func (c *Client) Embedding(ctx context.Context, texts []string) ([][]float32, error) {
-// 	results := make([][]float32, len(texts))
-// 	for i, text := range texts {
-// 		// If the text is within the maximum allowed length, process directly.
-// 		if len(text) <= embeddingsMaxTextLength {
-// 			embs, err := c.callEmbeddingAPI(ctx, []string{text})
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 			results[i] = embs[0]
-// 		} else {
-// 			// For texts that are too long, split into chunks.
-// 			chunks := chunkText(text, embeddingsChunkSize, embeddingsOverlap)
-// 			chunkEmbeddings, err := c.callEmbeddingAPI(ctx, chunks)
-// 			if err != nil {
-// 				return nil, err
-// 			}
+	// Embedding is usually limited to 8192 length, so if the text pass that,
+	// it should be splitted into smaller chunks.
+	// embeddings for each chunk will be computed, and then averaged.
+	//
+	// We doing the fragmentation here, and not in the specific LLM client,
+	// because we assume it needed for every LLM client.
+	// If the text is within the maximum allowed length, process directly.
+	if len(text) <= embeddingsMaxTextLength {
+		embs, err := c.client.CreateEmbeddings(ctx, c.modelClsEmb, []string{text})
+		if err != nil {
+			return nil, err
+		}
 
-// 			// Average the embeddings of the chunks.
-// 			avgEmbedding, err := averageEmbeddings(chunkEmbeddings)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 			results[i] = avgEmbedding
-// 		}
-// 	}
+		return embs[0], nil
+	} else {
+		// For texts that are too long, split into chunks.
+		chunks := chunkText(text, embeddingsChunkSize, embeddingsOverlap)
+		chunkEmbeddings, err := c.client.CreateEmbeddings(ctx, c.modelClsEmb, chunks)
+		if err != nil {
+			return nil, err
+		}
 
-// 	return results, nil
-// }
+		// Average the embeddings of the chunks.
+		avgEmbedding, err := averageEmbeddings(chunkEmbeddings)
+		if err != nil {
+			return nil, err
+		}
 
-// func (c *Client) Embedding(ctx context.Context, texts []string) ([][]float32, error) {
-// 	for _, text := range texts {
-// 		if len(text) > embeddingsMaxTextLength {
-// 			return nil, fmt.Errorf("text is too long (%d)", len(text))
-// 		}
-// 	}
+		return avgEmbedding, nil
+	}
+}
 
-// 	req := openai.EmbeddingRequest{
-// 		Model: embeddingModel,
-// 		Input: texts,
-// 	}
+// chunkText splits a text into chunks of at most chunkSize characters with a given overlap.
+func chunkText(text string, chunkSize, overlap int) []string {
+	var chunks []string
+	runes := []rune(text)
+	n := len(runes)
+	start := 0
+	for start < n {
+		end := start + chunkSize
+		if end > n {
+			end = n
+		}
+		chunks = append(chunks, string(runes[start:end]))
+		// Move forward by chunkSize-overlap to allow overlapping.
+		start += (chunkSize - overlap)
+	}
+	return chunks
+}
 
-// 	resp, err := c.client.CreateEmbeddings(ctx, req)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+// averageEmbeddings calculates the element-wise average of the provided embeddings.
+// All embeddings must have the same dimension.
+func averageEmbeddings(embeddings [][]float32) ([]float32, error) {
+	if len(embeddings) == 0 {
+		return nil, errors.New("no embeddings provided")
+	}
 
-// 	c.tokenUsed[string(embeddingModel)].add(tokenUsed{
-// 		prompt: resp.Usage.PromptTokens,
-// 	})
-// 	log.WithFields(log.Fields{"model": resp.Model, "tokens": resp.Usage.TotalTokens, "total_cost": c.totalCost()}).Debug("OpenAI API CreateEmbeddings call")
+	dim := len(embeddings[0])
+	avg := make([]float32, dim)
+	count := float32(len(embeddings))
 
-// 	if len(resp.Data) != len(texts) {
-// 		return nil, fmt.Errorf("number of embeddings returned does not match number of texts")
-// 	}
+	for _, emb := range embeddings {
+		if len(emb) != dim {
+			return nil, errors.New("embeddings have inconsistent dimensions")
+		}
+		for i, value := range emb {
+			avg[i] += value
+		}
+	}
 
-// 	embeddings := make([][]float32, len(texts))
-// 	for i, embedding := range resp.Data {
-// 		embeddings[i] = embedding.Embedding
-// 	}
+	for i := range avg {
+		avg[i] /= count
+	}
 
-// 	return embeddings, nil
-// }
+	return avg, nil
+}
 
-// // chunkText splits a text into chunks of at most chunkSize characters with a given overlap.
-// func chunkText(text string, chunkSize, overlap int) []string {
-// 	var chunks []string
-// 	runes := []rune(text)
-// 	n := len(runes)
-// 	start := 0
-// 	for start < n {
-// 		end := start + chunkSize
-// 		if end > n {
-// 			end = n
-// 		}
-// 		chunks = append(chunks, string(runes[start:end]))
-// 		// Move forward by chunkSize-overlap to allow overlapping.
-// 		start += (chunkSize - overlap)
-// 	}
-// 	return chunks
-// }
+// Not used at the moment.
+// weightedAverageEmbeddings calculates the element-wise weighted average of embeddings.
+// The weights slice should have the same length as embeddings and its values don't have to sum to 1.
+func weightedAverageEmbeddings(embeddings [][]float32, weights []float32) ([]float32, error) {
+	if len(embeddings) == 0 {
+		return nil, errors.New("no embeddings provided")
+	}
+	if len(embeddings) != len(weights) {
+		return nil, errors.New("number of weights must match number of embeddings")
+	}
 
-// // averageEmbeddings calculates the element-wise average of the provided embeddings.
-// // All embeddings must have the same dimension.
-// func averageEmbeddings(embeddings [][]float32) ([]float32, error) {
-// 	if len(embeddings) == 0 {
-// 		return nil, errors.New("no embeddings provided")
-// 	}
+	dim := len(embeddings[0])
+	weightedAvg := make([]float32, dim)
+	var totalWeight float32
 
-// 	dim := len(embeddings[0])
-// 	avg := make([]float32, dim)
-// 	count := float32(len(embeddings))
+	// Normalize weights and aggregate
+	for idx, emb := range embeddings {
+		if len(emb) != dim {
+			return nil, errors.New("embeddings have inconsistent dimensions")
+		}
+		totalWeight += weights[idx]
+		for i, value := range emb {
+			weightedAvg[i] += value * weights[idx]
+		}
+	}
 
-// 	for _, emb := range embeddings {
-// 		if len(emb) != dim {
-// 			return nil, errors.New("embeddings have inconsistent dimensions")
-// 		}
-// 		for i, value := range emb {
-// 			avg[i] += value
-// 		}
-// 	}
+	// Normalize by the total weight
+	if totalWeight == 0 {
+		return nil, errors.New("total weight is zero")
+	}
 
-// 	for i := range avg {
-// 		avg[i] /= count
-// 	}
+	for i := range weightedAvg {
+		weightedAvg[i] /= totalWeight
+	}
 
-// 	return avg, nil
-// }
+	return weightedAvg, nil
+}
 
-// // weightedAverageEmbeddings calculates the element-wise weighted average of embeddings.
-// // The weights slice should have the same length as embeddings and its values don't have to sum to 1.
-// func weightedAverageEmbeddings(embeddings [][]float32, weights []float32) ([]float32, error) {
-// 	if len(embeddings) == 0 {
-// 		return nil, errors.New("no embeddings provided")
-// 	}
-// 	if len(embeddings) != len(weights) {
-// 		return nil, errors.New("number of weights must match number of embeddings")
-// 	}
+func cleanTextForEmbeddings(text string) string {
+	// Lowercase the text
+	cleanedText := strings.ToLower(text)
 
-// 	dim := len(embeddings[0])
-// 	weightedAvg := make([]float32, dim)
-// 	var totalWeight float32
+	// Remove non-relevant characters
+	re := regexp.MustCompile(`<[^>-]*>`)
+	cleanedText = re.ReplaceAllString(cleanedText, "")
 
-// 	// Normalize weights and aggregate
-// 	for idx, emb := range embeddings {
-// 		if len(emb) != dim {
-// 			return nil, errors.New("embeddings have inconsistent dimensions")
-// 		}
-// 		totalWeight += weights[idx]
-// 		for i, value := range emb {
-// 			weightedAvg[i] += value * weights[idx]
-// 		}
-// 	}
+	// Replace multiple whitespaces with a single space
+	cleanedText = strings.Join(strings.Fields(cleanedText), " ")
 
-// 	// Normalize by the total weight
-// 	if totalWeight == 0 {
-// 		return nil, errors.New("total weight is zero")
-// 	}
+	cleanedText = strings.TrimSpace(cleanedText)
 
-// 	for i := range weightedAvg {
-// 		weightedAvg[i] /= totalWeight
-// 	}
-
-// 	return weightedAvg, nil
-// }
+	return cleanedText
+}

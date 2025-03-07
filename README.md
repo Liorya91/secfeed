@@ -5,6 +5,9 @@
 ### Important:
 
 - Checking minimal article content that fits as an article
+- README
+- Amortized cost
+- write logs to some file, so could investigate classification issues
 
 ### Nice to have:
 
@@ -22,3 +25,6 @@
   - infosecurity magazine
   - computerweekly
   - hackread
+- Enforce JSON formatting in llm clients
+- Embedding
+  - generate similar words for improving the precision

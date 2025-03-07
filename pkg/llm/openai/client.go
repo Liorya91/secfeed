@@ -26,6 +26,21 @@ var (
 			cachedInput: 1.25,
 			output:      10,
 		},
+		openai.O1: {
+			input:       15,
+			cachedInput: 7.5,
+			output:      60,
+		},
+		openai.O3Mini: {
+			input:       1.1,
+			cachedInput: 0.55,
+			output:      4.4,
+		},
+		openai.O1Mini: {
+			input:       1.1,
+			cachedInput: 0.55,
+			output:      4.4,
+		},
 		string(openai.AdaEmbeddingV2): {
 			input:       0.10,
 			cachedInput: 0,
@@ -33,6 +48,11 @@ var (
 		},
 		string(openai.SmallEmbedding3): {
 			input:       0.02,
+			cachedInput: 0,
+			output:      0,
+		},
+		string(openai.LargeEmbedding3): {
+			input:       0.13,
 			cachedInput: 0,
 			output:      0,
 		},
@@ -72,13 +92,8 @@ func NewClient() (*Client, error) {
 	client := openai.NewClient(apiKey)
 
 	return &Client{
-		client: client,
-		tokenUsed: map[string]*tokenUsed{
-			openai.GPT4oMini:               {},
-			openai.GPT4o:                   {},
-			string(openai.AdaEmbeddingV2):  {},
-			string(openai.SmallEmbedding3): {},
-		},
+		client:    client,
+		tokenUsed: make(map[string]*tokenUsed),
 	}, nil
 }
 
@@ -97,7 +112,7 @@ func (c *Client) ChatCompletion(ctx context.Context, model string, systemMsg, us
 		})
 	}
 
-	// TODO: implemen json formatting.
+	// TODO: implement json formatting.
 
 	resp, err := c.client.CreateChatCompletion(
 		ctx,
@@ -112,13 +127,36 @@ func (c *Client) ChatCompletion(ctx context.Context, model string, systemMsg, us
 		return "", fmt.Errorf("failed to call OpenAI API: %w", err)
 	}
 
-	c.tokenUsed[string(model)].add(tokenUsed{
-		prompt:     resp.Usage.PromptTokens,
-		completion: resp.Usage.CompletionTokens,
-	})
+	c.updateTokenUsed(model, tokenUsed{prompt: resp.Usage.PromptTokens, completion: resp.Usage.CompletionTokens})
 	log.WithFields(log.Fields{"model": resp.Model, "tokens": resp.Usage.TotalTokens, "total_cost": c.totalCost()}).Debug("OpenAI API CreateChatCompletion call")
 
 	return resp.Choices[0].Message.Content, nil
+}
+
+func (c *Client) CreateEmbeddings(ctx context.Context, model string, texts []string) ([][]float32, error) {
+	req := openai.EmbeddingRequest{
+		Model: openai.EmbeddingModel(model),
+		Input: texts,
+	}
+
+	resp, err := c.client.CreateEmbeddings(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	c.updateTokenUsed(model, tokenUsed{prompt: resp.Usage.PromptTokens, completion: resp.Usage.CompletionTokens})
+	log.WithFields(log.Fields{"model": resp.Model, "tokens": resp.Usage.TotalTokens, "total_cost": c.totalCost()}).Debug("OpenAI API CreateEmbeddings call")
+
+	if len(resp.Data) != len(texts) {
+		return nil, fmt.Errorf("number of embeddings returned does not match number of texts")
+	}
+
+	embeddings := make([][]float32, len(texts))
+	for i, embedding := range resp.Data {
+		embeddings[i] = embedding.Embedding
+	}
+
+	return embeddings, nil
 }
 
 func (c *Client) totalCost() float32 {
@@ -129,4 +167,15 @@ func (c *Client) totalCost() float32 {
 	}
 
 	return total
+}
+
+func (c *Client) updateTokenUsed(model string, used tokenUsed) {
+	if _, ok := c.tokenUsed[model]; !ok {
+		c.tokenUsed[model] = &tokenUsed{}
+	}
+
+	c.tokenUsed[model].add(tokenUsed{
+		prompt:     used.prompt,
+		completion: used.completion,
+	})
 }

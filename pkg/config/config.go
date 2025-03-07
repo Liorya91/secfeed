@@ -8,9 +8,9 @@ import (
 )
 
 type Config struct {
-	Categories          []Category `yaml:"categories"`
-	SimilarityThreshold int        `yaml:"similarity_threshold"`
-	RssFeed             []RSSFeed  `yaml:"rss_feed"`
+	Categories   []Category `yaml:"categories"`
+	ClsThreshold float32    `yaml:"classification_threshold"`
+	RssFeed      []RSSFeed  `yaml:"rss_feed"`
 }
 
 type Category struct {
