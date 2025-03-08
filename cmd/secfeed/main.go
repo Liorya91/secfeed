@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"runtime/debug"
 	"sync"
@@ -22,8 +23,9 @@ import (
 )
 
 var (
-	configFile string
-	verbose    bool
+	configFile    string
+	verbose       bool
+	logFileOutput string
 )
 
 var rootCmd = &cobra.Command{
@@ -31,7 +33,9 @@ var rootCmd = &cobra.Command{
 	Short: "Security Feed CLI tool",
 	Long:  `A CLI tool fetching security feeds and vulnerability information.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		setupLog()
+		if err := setupLog(); err != nil {
+			return err
+		}
 
 		if err := start(); err != nil {
 			return err
@@ -41,8 +45,21 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func setupLog() {
-	log.SetOutput(os.Stdout)
+func setupLog() error {
+	output := io.Writer(os.Stdout)
+
+	// If log file is specified, create a multi-writer
+	if logFileOutput != "" {
+		logFile, err := os.OpenFile(logFileOutput, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			return fmt.Errorf("failed to open log file: %w", err)
+		}
+
+		// Use MultiWriter to write to both stdout and the file
+		output = io.MultiWriter(os.Stdout, logFile)
+	}
+
+	log.SetOutput(output)
 
 	if verbose {
 		log.SetLevel(log.DebugLevel)
@@ -54,6 +71,8 @@ func setupLog() {
 		TimestampFormat:  "2006-01-02 15:04:05",
 		NoUppercaseLevel: true,
 	})
+
+	return nil
 }
 
 func start() error {
@@ -154,6 +173,7 @@ func start() error {
 func main() {
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "config.yml", "config file path")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().StringVarP(&logFileOutput, "log-file", "l", "", "log file path")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

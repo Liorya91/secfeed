@@ -3,6 +3,7 @@
 ![](./assets/secfeed-logo.png)
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8.svg)](https://golang.org/doc/go1.24)
+[![License](https://img.shields.io/github/license/alex-ilgayev/secfeed)](./LICENSE)
 
 SecFeed is a powerful CLI tool that aggregates, analyzes, and filters security-related articles from multiple RSS feeds using large language models (LLMs). It automates the discovery of relevant security news based on user-defined categories, provides concise summaries, and can push notifications to Slack.
 
@@ -238,7 +239,6 @@ Contributions are welcome! See the [TODOs](README.md#todos) in the README for pl
 
 - Checking minimal article content that fits as an article
 - Amortized cost
-- write logs to some file, so could investigate classification issues
 - some tests
 - ci sanity
 - remove debug printing to slack
