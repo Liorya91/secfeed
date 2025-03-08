@@ -24,35 +24,39 @@ func (a Article) String() string {
 	return fmt.Sprintf("Article: %s\nDescription: %s\nContent (snippet and size): %s... (%d)\nLink: %s\nPublished: %s\nCategories: %v\n\n", a.Title, a.Description, contentSnippet, len(a.Content), a.Link, a.Published, a.Categories)
 }
 
-func (a Article) FormatAsMarkdown() string {
+func (a Article) FormatAsMarkdown(debugInfo bool) string {
 	t := fmt.Sprintf("# %s\n\n%s\n\nRead more [here](%s)", a.Title, a.Summary, a.Link)
 
-	t = t + "\n\n---\n\n"
-	t = t + "**Debug info:**\n\n"
-	t = t + fmt.Sprintf("**len(Description):** %d\n", len(a.Description))
-	t = t + fmt.Sprintf("**len(Content):** %d\n\n", len(a.Content))
-	for _, cr := range a.CatRelevance {
-		t = t + fmt.Sprintf("**Category:** %s\n\n**Relevance:** %.1f\n\n**Explanation**: %s\n\n", cr.Category, cr.Relevance, cr.Explanation)
+	if debugInfo {
+		t = t + "\n\n---\n\n"
+		t = t + "**Debug info:**\n\n"
+		t = t + fmt.Sprintf("**len(Description):** %d\n", len(a.Description))
+		t = t + fmt.Sprintf("**len(Content):** %d\n\n", len(a.Content))
+		for _, cr := range a.CatRelevance {
+			t = t + fmt.Sprintf("**Category:** %s\n\n**Relevance:** %.1f\n\n**Explanation**: %s\n\n", cr.Category, cr.Relevance, cr.Explanation)
+		}
+		t = t + "\n\n---\n\n"
 	}
-	t = t + "\n\n---\n\n"
 
 	return t
 }
 
-func (a Article) FormatAsSlackMrkdwn() string {
+func (a Article) FormatAsSlackMrkdwn(debugInfo bool) string {
 	a.Summary = strings.ReplaceAll(a.Summary, "- ", "• ")
 	a.Summary = strings.ReplaceAll(a.Summary, "**", "*")
 
 	t := fmt.Sprintf("*%s*\n\n%s\n\nRead more <%s|here>", a.Title, a.Summary, a.Link)
 
-	t = t + "\n---\n"
-	t = t + "*Debug info:*\n"
-	t = t + fmt.Sprintf("*len(Description):* %d\n", len(a.Description))
-	t = t + fmt.Sprintf("*len(Content):* %d\n", len(a.Content))
-	for _, cr := range a.CatRelevance {
-		t = t + fmt.Sprintf("*Category:* %s\n*Relevance:* %.1f\n*Explanation*: %s\n\n", cr.Category, cr.Relevance, cr.Explanation)
+	if debugInfo {
+		t = t + "\n---\n"
+		t = t + "*Debug info:*\n"
+		t = t + fmt.Sprintf("*len(Description):* %d\n", len(a.Description))
+		t = t + fmt.Sprintf("*len(Content):* %d\n", len(a.Content))
+		for _, cr := range a.CatRelevance {
+			t = t + fmt.Sprintf("*Category:* %s\n*Relevance:* %.1f\n*Explanation*: %s\n\n", cr.Category, cr.Relevance, cr.Explanation)
+		}
+		t = t + "\n---\n"
 	}
-	t = t + "\n---\n"
 
 	return t
 }

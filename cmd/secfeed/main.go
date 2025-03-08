@@ -26,6 +26,7 @@ var (
 	configFile    string
 	verbose       bool
 	logFileOutput string
+	debugInfo     bool
 )
 
 var rootCmd = &cobra.Command{
@@ -151,7 +152,7 @@ func start() error {
 					}
 
 					if slackClient != nil {
-						if err := slackClient.SendWebhook(ctx, article.FormatAsSlackMrkdwn()); err != nil {
+						if err := slackClient.SendWebhook(ctx, article.FormatAsSlackMrkdwn(debugInfo)); err != nil {
 							log.WithFields(articleLogFields).Errorf("failed to send slack webhook: %v", err)
 						}
 					}
@@ -174,6 +175,7 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "config.yml", "config file path")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().StringVarP(&logFileOutput, "log-file", "l", "", "log file path")
+	rootCmd.PersistentFlags().BoolVarP(&debugInfo, "debug", "d", false, "debug mode (prints extra context with the summarized report)")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -187,7 +189,7 @@ func printSummaryToStdout(article types.Article) {
 		glamour.WithWordWrap(80),
 	)
 
-	out, _ := r.Render(article.FormatAsMarkdown())
+	out, _ := r.Render(article.FormatAsMarkdown(debugInfo))
 	fmt.Print(out)
 }
 

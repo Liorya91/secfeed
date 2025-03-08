@@ -61,10 +61,9 @@ func (c *ClassificationEngine) classifyWithLLM(ctx context.Context, article type
 
 	for _, match := range catMatching {
 		log.WithFields(log.Fields{
-			"category":    match.Category,
-			"relevance":   match.Relevance,
-			"explanation": match.Explanation,
-		}).Debug("Category match")
+			"category":  match.Category,
+			"relevance": match.Relevance,
+		}).Debug("Category classified")
 	}
 
 	matchedCategories := make([]types.CategoryRelevance, 0)
@@ -93,7 +92,7 @@ func (c *ClassificationEngine) classifyWithEmbeddings(ctx context.Context, artic
 			"category":  name,
 			"sim":       sim,
 			"relevance": relevance,
-		}).Debug("Category match")
+		}).Debug("Category classified")
 
 		if relevance >= c.cfg.Threshold {
 			matchedCategories = append(matchedCategories, types.CategoryRelevance{

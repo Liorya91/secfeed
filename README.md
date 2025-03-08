@@ -13,6 +13,8 @@
 
 SecFeed consolidates cybersecurity news and updates from multiple feeds and then leverages cutting-edge language models to deliver concise, actionable summaries. Whether you're researching new vulnerabilities or staying ahead of the latest threat landscape, SecFeed provides the clarity and insights you need—fast.
 
+[![asciicast](https://asciinema.org/a/MkofnzMotbZpd9Tv8S5kMvk8a.svg)](https://asciinema.org/a/MkofnzMotbZpd9Tv8S5kMvk8a)
+
 ## Table of Contents
 
 - [Main Features](#main-features)
@@ -196,7 +198,7 @@ SecFeed is designed with modularity in mind, separating concerns into distinct p
 1. **Feed Fetcher** ([`feed`](./pkg/feed/))
 
 - Fetches articles from RSS feeds
-   - Provides a stream of articles for processing
+     - Provides a stream of articles for processing
 
 - This can be extended to include additional sources, such as LinkedIn and Twitter.
 
@@ -211,15 +213,15 @@ SecFeed is designed with modularity in mind, separating concerns into distinct p
 3. **Classification Engine** ([`classification`](./pkg/classification))
 
 - Analyzes articles for relevance using LLM or embeddings
-   - Scores articles against user-defined categories
-   - Filters out irrelevant content based on threshold
+     - Scores articles against user-defined categories
+     - Filters out irrelevant content based on threshold
 
 4. **LLM Client** ([`llm`](./pkg/llm/))
 
 - Abstracts interaction with language model providers
-   - Supports OpenAI API and Ollama
-   - Handles prompt engineering, result analysis, and input chunking.
-   - Tracking costs only for OpenAI implementations.
+     - Supports OpenAI API and Ollama
+     - Handles prompt engineering, result analysis, and input chunking.
+     - Tracking costs only for OpenAI implementations.
 
 5. **Summary** ([`llm.Summarize`](./pkg/llm/llm.go))
 
@@ -228,7 +230,7 @@ SecFeed is designed with modularity in mind, separating concerns into distinct p
 6. **Slack** ([`slack`](./pkg/slack/))
 
 - Articles are formatted for Slack
-   - Sends webhook notifications
+     - Sends webhook notifications
 
 ### Classification Engine
 
@@ -237,8 +239,8 @@ There are currently two classification methods that can be configured through th
 1. **LLM Classification**
 
 - Evaluation of article relevance is based on direct LLM queries. Provide the categories and their descriptions to the prompt, and ask for a relevance score between 0 and 10.
-   - Provides detailed explanations for classifications
-   - Higher accuracy but more token usage. See cost estimations [here](./README.md#cost-management).
+     - Provides detailed explanations for classifications
+     - Higher accuracy but more token usage. See cost estimations [here](./README.md#cost-management).
 
 2. **Embeddings Classification**
       - Uses vector embeddings to match articles to categories.
@@ -265,7 +267,6 @@ Contributions are welcome! See the [Roadmap](README.md#roadmap) in the README fo
 - Amortized cost
 - some tests
 - ci sanity
-- remove debug printing to slack
 
 ### Nice to Have
 
