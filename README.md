@@ -48,8 +48,8 @@ docker build -t secfeed .
 
 # Run with Docker
 docker run -v $(pwd)/config.yml:/app/config.yml \
-  -e OPENAI_API_KEY=your_api_key \
-  -e SLACK_WEBHOOK_URL=your_webhook_url \
+  -e OPENAI_API_KEY \
+  -e SLACK_WEBHOOK_URL \
   secfeed
 ```
 
@@ -239,9 +239,9 @@ Contributions are welcome! See the [TODOs](README.md#todos) in the README for pl
 - Checking minimal article content that fits as an article
 - Amortized cost
 - write logs to some file, so could investigate classification issues
-- docker execution
 - some tests
 - ci sanity
+- remove debug printing to slack
 
 ### Nice to have:
 
