@@ -41,62 +41,62 @@ categories:
 rss_feed:
   - url: https://www.wiz.io/feed/rss.xml
     name: Wiz Blog
-  # - url: https://krebsonsecurity.com/feed/
-  #   name: Krebs on Security
-  # - url: https://feeds.feedburner.com/TheHackersNews
-  #   name: The Hacker News
-  # - url: https://www.bleepingcomputer.com/feed/
-  #   name: Bleeping Computer
-  # - url: https://threatpost.com/feed/
-  #   name: Threatpost
-  # - url: https://www.securityweek.com/feed/
-  #   name: SecurityWeek
-  # - url: https://news.sophos.com/en-us/feed/
-  #   name: Sophos News
-  # - url: https://www.infosecurity-magazine.com/rss/news/
-  #   name: Infosecurity Magazine
-  # - url: https://securityaffairs.co/wordpress/feed/
-  #   name: Security Affairs
-  # - url: https://blog.talosintelligence.com/rss/
-  #   name: Cisco Talos Intelligence Group
-  # - url: https://www.malwarebytes.com/blog/feed/index.xml
-  #   name: Malwarebytes Labs
-  # - url: https://feeds.arstechnica.com/arstechnica/technology-lab
-  #   name: Ars Technica - Biz & IT
-  # - url: https://techcrunch.com/tag/security/feed/
-  #   name: TechCrunch Security
-  # - url: https://www.zdnet.com/topic/security/rss.xml
-  #   name: ZDNet Security
-  # - url: https://www.csoonline.com/feed/
-  #   name: CSO Online
-  # - url: https://feeds.feedburner.com/PaloAltoNetworks
-  #   name: Palo Alto Networks Blog
-  # - url: https://feeds.feedblitz.com/fortinet/blog/threat-research
-  #   name: Fortinet Threat Research
-  # - url: https://blog.checkpoint.com/feed/
-  #   name: Check Point Blog
-  # - url: https://blog.rapid7.com/feed/
-  #   name: Rapid7 Blog
-  # - url: https://www.kaspersky.com/blog/feed/
-  #   name: Kaspersky Lab Blog
-  # - url: https://www.sentinelone.com/blog/feed/
-  #   name: SentinelOne Blog
-  # - url: https://www.tenable.com/blog/feed
-  #   name: Tenable Blog
-  # - url: https://www.veracode.com/blog/feed
-  #   name: Veracode Blog
-  # - url: https://www.digitalshadows.com/blog-and-research/feed/
-  #   name: Digital Shadows Blog
-  # - url: https://www.recordedfuture.com/feed/
-  #   name: Recorded Future Blog
-  # - url: https://www.tripwire.com/state-of-security/feed/
-  #   name: Tripwire Blog
-  # - url: https://arcticwolf.com/feed/
-  #   name: Arctic Wolf Blog
-  # - url: https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v
-  #   name: Google Threat Intelligence (Mandiant)
-  # - url: https://www.crowdstrike.com/blog/feed/
-  #   name: CrowdStrike Blog
+  - url: https://krebsonsecurity.com/feed/
+    name: Krebs on Security
+  - url: https://feeds.feedburner.com/TheHackersNews
+    name: The Hacker News
+  - url: https://www.bleepingcomputer.com/feed/
+    name: Bleeping Computer
+  - url: https://threatpost.com/feed/
+    name: Threatpost
+  - url: https://www.securityweek.com/feed/
+    name: SecurityWeek
+  - url: https://news.sophos.com/en-us/feed/
+    name: Sophos News
+  - url: https://www.infosecurity-magazine.com/rss/news/
+    name: Infosecurity Magazine
+  - url: https://securityaffairs.co/wordpress/feed/
+    name: Security Affairs
+  - url: https://blog.talosintelligence.com/rss/
+    name: Cisco Talos Intelligence Group
+  - url: https://www.malwarebytes.com/blog/feed/index.xml
+    name: Malwarebytes Labs
+  - url: https://feeds.arstechnica.com/arstechnica/technology-lab
+    name: Ars Technica - Biz & IT
+  - url: https://techcrunch.com/tag/security/feed/
+    name: TechCrunch Security
+  - url: https://www.zdnet.com/topic/security/rss.xml
+    name: ZDNet Security
+  - url: https://www.csoonline.com/feed/
+    name: CSO Online
+  - url: https://feeds.feedburner.com/PaloAltoNetworks
+    name: Palo Alto Networks Blog
+  - url: https://feeds.feedblitz.com/fortinet/blog/threat-research
+    name: Fortinet Threat Research
+  - url: https://blog.checkpoint.com/feed/
+    name: Check Point Blog
+  - url: https://blog.rapid7.com/feed/
+    name: Rapid7 Blog
+  - url: https://www.kaspersky.com/blog/feed/
+    name: Kaspersky Lab Blog
+  - url: https://www.sentinelone.com/blog/feed/
+    name: SentinelOne Blog
+  - url: https://www.tenable.com/blog/feed
+    name: Tenable Blog
+  - url: https://www.veracode.com/blog/feed
+    name: Veracode Blog
+  - url: https://www.digitalshadows.com/blog-and-research/feed/
+    name: Digital Shadows Blog
+  - url: https://www.recordedfuture.com/feed/
+    name: Recorded Future Blog
+  - url: https://www.tripwire.com/state-of-security/feed/
+    name: Tripwire Blog
+  - url: https://arcticwolf.com/feed/
+    name: Arctic Wolf Blog
+  - url: https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v
+    name: Google Threat Intelligence (Mandiant)
+  - url: https://www.crowdstrike.com/blog/feed/
+    name: CrowdStrike Blog
 # TODO: There is an issue to parse the summary
 # - url: https://www.schneier.com/blog/atom.xml
 #   name: Schneier on Security
