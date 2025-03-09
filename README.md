@@ -19,18 +19,18 @@ SecFeed consolidates cybersecurity news and updates from multiple feeds and then
 
 - [Main Features](#main-features)
 - [Installation](#installation)
-    - [Prerequisites](#prerequisites)
-    - [From Source](#from-source)
-    - [Using Docker](#using-docker)
+  - [Prerequisites](#prerequisites)
+  - [From Source](#from-source)
+  - [Using Docker](#using-docker)
 - [Configuration](#configuration)
-    - [Configuration File Structure](#configuration-file-structure)
-    - [Environment Variables](#environment-variables)
+  - [Configuration File Structure](#configuration-file-structure)
+  - [Environment Variables](#environment-variables)
 - [Usage](#usage)
-    - [Command Line Options](#command-line-options)
-    - [Example Configs](#example-configs)
+  - [Command Line Options](#command-line-options)
+  - [Example Configs](#example-configs)
 - [Architecture](#architecture)
-    - [Flow Diagram](#flow-diagram)
-    - [Core Components](#core-components)
+  - [Flow Diagram](#flow-diagram)
+  - [Core Components](#core-components)
 - [Cost Management](#cost-management)
 - [Contributing](#contributing)
 - [Roadmap](#roadmap)
@@ -263,10 +263,8 @@ Contributions are welcome! See the [Roadmap](README.md#roadmap) in the README fo
 
 ### Important
 
-- Checking minimal article content that fits as an article
 - Amortized cost
 - some tests
-- ci sanity
 
 ### Nice to Have
 
@@ -285,10 +283,10 @@ Contributions are welcome! See the [Roadmap](README.md#roadmap) in the README fo
     - infosecurity magazine
     - computerweekly
     - hackread
-- Enforce JSON formatting in llm clients
 - Embedding
     - generate similar words for improving the precision
 - Handle rate limiting when fetching feeds
+- ci sanity
 
 ## License
 

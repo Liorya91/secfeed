@@ -1,6 +1,6 @@
 # initial pull in days. If zero we analyze only new articles.
 # if higher than 0, we will analyze the last N days of articles.
-init_pull: 1
+init_pull: 0
 
 reporting:
   # send notifications to slack (requires SLACK_WEBHOOK_URL env variable)
@@ -25,7 +25,7 @@ llm:
     # values range from 0 to 10.
     # if the engine is llm-based, 7-8 is a good threshold for relevance in most cases
     # if the engine is embeddings-based, 4-5 is a good threshold (still work-in-progress)
-    threshold: 7
+    threshold: 8
   summary:
     # model name that will be used for summarization.
     model: "gpt-4o"
@@ -33,81 +33,140 @@ categories:
   # Adding description is optional, but is very beneficial for the LLM model.
   # Description should explain what the user is looking for in the article.
   - name: Software Supply Chain
-    description: Articles about software supply chain security, including best practices, tools, and case studies.
-  - name: CI/CD Security
-    description: Articles about securing continuous integration and continuous deployment (CI/CD) pipelines, including best practices, tools, and case studies.
-  - name: Application Security
-    description: Articles about application security, ASPM, secure coding practices, vulnerability management, and secure software development lifecycles.
+    description: >
+      Articles covering software supply chain security, including best practices,
+      tools, processes, and real-world case studies. Content may discuss securing
+      dependencies, preventing supply chain attacks, and maintaining the integrity
+      of software throughout its lifecycle.
+
+  - name: Open Source Vulnerabilities
+    description: >
+      Articles focusing on vulnerabilities in open source components, libraries,
+      and frameworks. Topics may include disclosures of new CVEs, remediation
+      steps for affected dependencies, and best practices for managing open source
+      risk.
+
+  - name: Build Pipeline Security
+    description: >
+      Articles addressing security controls and best practices within the software
+      build pipeline. Could include discussions of CI/CD hardening, secure build
+      environments, artifact integrity, and pipeline threat modeling.
+
+  - name: Dependency & Package Management
+    description: >
+      Articles centered on managing software dependencies, package repositories,
+      package signing, and related security concerns. Includes strategies to avoid
+      malicious packages and tools to monitor for known issues in third-party
+      components.
+
+  - name: DevSecOps
+    description: >
+      Articles discussing integrating security into development and operations
+      workflows (DevOps). May cover automated security testing, shift-left
+      approaches, collaboration between dev and security teams, and continuous
+      security monitoring.
+
+  - name: Vulnerability Management
+    description: >
+      Articles detailing the identification, prioritization, remediation, and
+      reporting of security vulnerabilities. May include vulnerability scanning
+      tools, patch management strategies, and zero-day exploits relevant to the
+      software supply chain.
+
+  - name: Security Compliance & Regulations
+    description: >
+      Articles focusing on compliance requirements, regulatory standards, and
+      guidelines affecting software supply chains. Topics can include frameworks
+      like NIST, ISO, SOC, PCI, and legal aspects of shipping secure software.
+
+  - name: Secure Coding & Code Quality
+    description: >
+      Articles exploring secure coding practices, static/dynamic analysis tools,
+      secure code reviews, and methods to ensure high-quality code that reduces
+      supply chain risks and vulnerabilities.
+
 rss_feed:
-  # - url: https://www.wiz.io/feed/rss.xml
-  # name: Wiz Blog
-  # - url: https://krebsonsecurity.com/feed/
-  # name: Krebs on Security
+  - url: https://www.wiz.io/feed/rss.xml
+    name: Wiz Blog
+  - url: https://krebsonsecurity.com/feed/
+    name: Krebs on Security
   - url: https://feeds.feedburner.com/TheHackersNews
     name: The Hacker News
   - url: https://www.bleepingcomputer.com/feed/
     name: Bleeping Computer
-  # - url: https://threatpost.com/feed/
-  #   name: Threatpost
+  - url: https://threatpost.com/feed/
+    name: Threatpost
   - url: https://www.securityweek.com/feed/
     name: SecurityWeek
-  # - url: https://news.sophos.com/en-us/feed/
-  #   name: Sophos News
-  # - url: https://www.infosecurity-magazine.com/rss/news/
-  #   name: Infosecurity Magazine
-  # - url: https://securityaffairs.co/wordpress/feed/
-  #   name: Security Affairs
-  # - url: https://blog.talosintelligence.com/rss/
-  #   name: Cisco Talos Intelligence Group
-  # - url: https://www.malwarebytes.com/blog/feed/index.xml
-  #   name: Malwarebytes Labs
-  # - url: https://feeds.arstechnica.com/arstechnica/technology-lab
-  #   name: Ars Technica - Biz & IT
-  # - url: https://techcrunch.com/tag/security/feed/
-  #   name: TechCrunch Security
-  # - url: https://www.zdnet.com/topic/security/rss.xml
-  #   name: ZDNet Security
-  # - url: https://www.csoonline.com/feed/
-  #   name: CSO Online
-  # - url: https://feeds.feedburner.com/PaloAltoNetworks
-  #   name: Palo Alto Networks Blog
-  # - url: https://feeds.feedblitz.com/fortinet/blog/threat-research
-  #   name: Fortinet Threat Research
-  # - url: https://blog.checkpoint.com/feed/
-  #   name: Check Point Blog
-  # - url: https://blog.rapid7.com/feed/
-  #   name: Rapid7 Blog
-  # - url: https://www.kaspersky.com/blog/feed/
-  #   name: Kaspersky Lab Blog
-  # - url: https://www.sentinelone.com/blog/feed/
-  #   name: SentinelOne Blog
-  # - url: https://www.tenable.com/blog/feed
-  #   name: Tenable Blog
-  # - url: https://www.veracode.com/blog/feed
-  #   name: Veracode Blog
-  # - url: https://www.digitalshadows.com/blog-and-research/feed/
-  #   name: Digital Shadows Blog
-  # - url: https://www.recordedfuture.com/feed/
-  #   name: Recorded Future Blog
-  # - url: https://www.tripwire.com/state-of-security/feed/
-  #   name: Tripwire Blog
-  # - url: https://arcticwolf.com/feed/
-  #   name: Arctic Wolf Blog
-  # - url: https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v
-  #   name: Google Threat Intelligence (Mandiant)
-  # - url: https://www.crowdstrike.com/blog/feed/
-  #   name: CrowdStrike Blog
-# TODO: There is an issue to parse the summary
-# - url: https://www.schneier.com/blog/atom.xml
-#   name: Schneier on Security
-# - url: https://www.tenable.com/security/research/feed
-#   name: Tenable Research Advisories
-# - url: https://www.mcafee.com/blogs/feed/
-#   name: McAfee Blogs
+  - url: https://news.sophos.com/en-us/feed/
+    name: Sophos News
+  - url: https://www.infosecurity-magazine.com/rss/news/
+    name: Infosecurity Magazine
+  - url: https://securityaffairs.co/wordpress/feed/
+    name: Security Affairs
+  - url: https://blog.talosintelligence.com/rss/
+    name: Cisco Talos Intelligence Group
+  - url: https://www.malwarebytes.com/blog/feed/index.xml
+    name: Malwarebytes Labs
+  - url: https://feeds.arstechnica.com/arstechnica/technology-lab
+    name: Ars Technica - Biz & IT
+  - url: https://techcrunch.com/tag/security/feed/
+    name: TechCrunch Security
+  - url: https://www.zdnet.com/topic/security/rss.xml
+    name: ZDNet Security
+  - url: https://www.csoonline.com/feed/
+    name: CSO Online
+  - url: https://feeds.feedburner.com/PaloAltoNetworks
+    name: Palo Alto Networks Blog
+  - url: https://feeds.feedblitz.com/fortinet/blog/threat-research
+    name: Fortinet Threat Research
+  - url: https://blog.checkpoint.com/feed/
+    name: Check Point Blog
+  - url: https://blog.rapid7.com/feed/
+    name: Rapid7 Blog
+  - url: https://www.kaspersky.com/blog/feed/
+    name: Kaspersky Lab Blog
+  - url: https://www.sentinelone.com/blog/feed/
+    name: SentinelOne Blog
+  - url: https://www.tenable.com/blog/feed
+    name: Tenable Blog
+  - url: https://www.veracode.com/blog/feed
+    name: Veracode Blog
+  - url: https://www.digitalshadows.com/blog-and-research/feed/
+    name: Digital Shadows Blog
+  - url: https://www.recordedfuture.com/feed/
+    name: Recorded Future Blog
+  - url: https://www.tripwire.com/state-of-security/feed/
+    name: Tripwire Blog
+  - url: https://arcticwolf.com/feed/
+    name: Arctic Wolf Blog
+  - url: https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v
+    name: Google Threat Intelligence (Mandiant)
+  - url: https://www.crowdstrike.com/blog/feed/
+    name: CrowdStrike Blog
+  - url: https://www.mcafee.com/blogs/feed/
+    name: McAfee Blogs
 
-# TODO: Protected by Cloudflare
-# - url: https://www.varonis.com/blog/feed/
-#   name: Varonis Blog
-# - url: https://www.darkreading.com/rss.xml
-#   name: Dark Reading
-
+  # TODO: Protected by Cloudflare
+  # - url: https://www.varonis.com/blog/feed/
+  #   name: Varonis Blog
+  # - url: https://www.darkreading.com/rss.xml
+  #   name: Dark Reading
+  #
+  # TODO: Ineffective HTML parsing by go-readability
+  # - url: https://www.schneier.com/blog/atom.xml
+  #   name: Schneier on Security
+  # - url: https://www.tenable.com/security/research/feed
+  #   name: Tenable Research Advisories
+#
+# TODO: Can't properly pull reddit because it is mainly urls to other websites.
+# - url: https://www.reddit.com/r/netsec/.rss
+#   name: Reddit NetSec
+# - url: https://www.reddit.com/r/cybersecurity/.rss
+#   name: Reddit Cybersecurity
+# - url: https://www.reddit.com/r/DevSecOps/.rss
+#   name: Reddit DevSecOps
+# - url: https://www.reddit.com/r/bugbounty/.rss
+#   name: Reddit Bug Bounty
+# - url: https://www.reddit.com/r/ReverseEngineering/.rss
+#   name: Reddit Reverse Engineering

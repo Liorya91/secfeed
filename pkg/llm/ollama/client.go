@@ -17,6 +17,8 @@ import (
 
 const (
 	completionAPI = "/api/chat"
+
+	keepAliveMinDefault = 5
 )
 
 type Client struct {
@@ -47,11 +49,11 @@ func NewClient(ctx context.Context, models []string) (*Client, error) {
 
 type ChatCompletionRequest struct {
 	Model     string                  `json:"model"`
-	Messages  []ChatCompletionMessage `json:"messages,omitempty"`
-	Option    ChatCompletionOptions   `json:"options,omitempty"`
-	Stream    bool                    `json:"stream,omitempty"`
+	Messages  []ChatCompletionMessage `json:"messages"`
+	Option    ChatCompletionOptions   `json:"options"`
+	Stream    bool                    `json:"stream"`
 	Format    string                  `json:"format,omitempty"`
-	KeepAlive int                     `json:"keep_alive,omitempty"`
+	KeepAlive int                     `json:"keep_alive"`
 }
 
 type ChatCompletionMessage struct {
@@ -60,7 +62,7 @@ type ChatCompletionMessage struct {
 }
 
 type ChatCompletionOptions struct {
-	Temperature float32 `json:"temperature,omitempty"`
+	Temperature float32 `json:"temperature"`
 }
 
 var (
@@ -81,8 +83,9 @@ func (c *Client) loadModel(ctx context.Context, model string) error {
 	// without a content.
 
 	chatReq := ChatCompletionRequest{
-		Model:    model,
-		Messages: nil,
+		Model:     model,
+		Messages:  nil,
+		KeepAlive: keepAliveMinDefault,
 	}
 
 	reqBody, err := json.Marshal(chatReq)
@@ -126,7 +129,10 @@ func (c *Client) loadModel(ctx context.Context, model string) error {
 	return nil
 }
 
-func (c *Client) ChatCompletion(ctx context.Context, model string, systemMsg, userMsg string, temperature float32, maxTokens int, jsonFormat bool) (string, error) {
+func (c *Client) ChatCompletion(ctx context.Context, model, systemMsg, userMsg string,
+	temperature float32, maxTokens int,
+	jsonSchema bool, jsonSchemaType interface{}) (string, error) {
+
 	messages := []ChatCompletionMessage{}
 	if systemMsg != "" {
 		messages = append(messages, ChatCompletionMessage{
@@ -149,9 +155,17 @@ func (c *Client) ChatCompletion(ctx context.Context, model string, systemMsg, us
 		Option: ChatCompletionOptions{
 			Temperature: temperature,
 		},
+		KeepAlive: keepAliveMinDefault,
 	}
 
-	if jsonFormat {
+	if jsonSchema {
+		// Couldn't achieve good results with Ollama,
+		// so leaving just JSON enforcement, without a specific schema.
+		//
+		// schema, err := jsonschema.GenerateSchemaForType(jsonSchemaType)
+		// if err != nil {
+		// 	return "", fmt.Errorf("failed to generate JSON schema: %w", err)
+		// }
 		chatReq.Format = "json"
 	}
 

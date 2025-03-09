@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 
 	"github.com/alex-ilgayev/secfeed/pkg/constants"
 	openai "github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai/jsonschema"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -97,7 +99,10 @@ func NewClient() (*Client, error) {
 	}, nil
 }
 
-func (c *Client) ChatCompletion(ctx context.Context, model string, systemMsg, userMsg string, temperature float32, maxTokens int, jsonFormat bool) (string, error) {
+func (c *Client) ChatCompletion(ctx context.Context, model, systemMsg, userMsg string,
+	temperature float32, maxTokens int,
+	jsonSchema bool, jsonSchemaType interface{}) (string, error) {
+
 	messages := []openai.ChatCompletionMessage{}
 	if systemMsg != "" {
 		messages = append(messages, openai.ChatCompletionMessage{
@@ -112,17 +117,30 @@ func (c *Client) ChatCompletion(ctx context.Context, model string, systemMsg, us
 		})
 	}
 
-	// TODO: implement json formatting.
+	chatReq := openai.ChatCompletionRequest{
+		Model:               model,
+		Messages:            messages,
+		Temperature:         temperature,
+		MaxCompletionTokens: maxTokens,
+	}
 
-	resp, err := c.client.CreateChatCompletion(
-		ctx,
-		openai.ChatCompletionRequest{
-			Model:               model,
-			Messages:            messages,
-			Temperature:         temperature,
-			MaxCompletionTokens: maxTokens,
-		},
-	)
+	if jsonSchema {
+		schema, err := jsonschema.GenerateSchemaForType(jsonSchemaType)
+		if err != nil {
+			return "", fmt.Errorf("failed to generate JSON schema: %w", err)
+		}
+
+		chatReq.ResponseFormat = &openai.ChatCompletionResponseFormat{
+			Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
+			JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+				Name:   reflect.TypeOf(jsonSchemaType).Name(),
+				Schema: schema,
+				Strict: true,
+			},
+		}
+	}
+
+	resp, err := c.client.CreateChatCompletion(ctx, chatReq)
 	if err != nil {
 		return "", fmt.Errorf("failed to call OpenAI API: %w", err)
 	}

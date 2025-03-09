@@ -61,10 +61,17 @@ func (a Article) FormatAsSlackMrkdwn(debugInfo bool) string {
 	return t
 }
 
+// Aggregate all the category classification into a single type.
+// Needed for JSON verification through openai API.
+// (can't use a list of CategoryRelevance directly)
+type CategoryRelevanceResponse struct {
+	Response []CategoryRelevance `json:"response"`
+}
+
 // CategoryRelevance represents the relevance of a category to an article.
 // Relevance is a number between 0 (not relevant) to 10 (very relevant).
 type CategoryRelevance struct {
 	Category    string  `json:"category"`
 	Relevance   float32 `json:"relevance"`
-	Explanation string  `json:"explanation,omitempty"`
+	Explanation string  `json:"explanation"`
 }

@@ -28,7 +28,9 @@ const (
 )
 
 type LLMClient interface {
-	ChatCompletion(ctx context.Context, model string, systemMsg, userMsg string, temperature float32, maxTokens int, jsonFormat bool) (string, error)
+	ChatCompletion(ctx context.Context, model, systemMsg, userMsg string,
+		temperature float32, maxTokens int,
+		jsonSchema bool, jsonSchemaType interface{}) (string, error)
 	CreateEmbeddings(ctx context.Context, model string, texts []string) ([][]float32, error)
 }
 
@@ -80,6 +82,7 @@ func (c *Client) ExtractCategories(ctx context.Context, article types.Article) (
 		0.2, // Low temperature for more deterministic results
 		llmMaxCompletionTokens,
 		true,
+		types.CategoryRelevanceResponse{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract categories: %w", err)
@@ -128,6 +131,7 @@ Article details are:
 		0.5,
 		llmMaxCompletionTokens,
 		false,
+		nil,
 	)
 	if err != nil {
 		return "", fmt.Errorf("failed to summarize article: %w", err)
@@ -144,12 +148,17 @@ Scoring:
 - A relevance score on a scale of 0 to 10, where 0 means “no connection” and 10 means “highly relevant.”
 - Provide a short explanation for the assigned score.
 
-Output must be valid JSON without markdown formatting. Return an array of objects, where each object has:
+Output must be valid JSON without markdown formatting. Return an object that looks like this:
 {
-	"category": "<category name>",
-	"relevance": <integer from 0 to 10>,
-	"explanation": "<brief explanation>"
-}
+	"response": [
+		{
+			"category": "<category name>",
+			"relevance": <integer from 0 to 10>,
+			"explanation": "<brief explanation>"
+		},
+		...
+	]
+]
 
 Categories:
 `
@@ -172,18 +181,19 @@ Categories:
 		0, // Low temperature for more deterministic results
 		llmMaxCompletionTokens,
 		true,
+		types.CategoryRelevanceResponse{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to match categories: %w", err)
 	}
 
-	var relevance []types.CategoryRelevance
+	var relevance types.CategoryRelevanceResponse
 	err = json.Unmarshal([]byte(resp), &relevance)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal relevance scores: %w", err)
 	}
 
-	return relevance, nil
+	return relevance.Response, nil
 }
 
 func (c *Client) EncodeCategories(ctx context.Context, categories []config.Category) (map[string][]float32, error) {
