@@ -13,7 +13,7 @@
 
 SecFeed consolidates cybersecurity news and updates from multiple feeds and then leverages cutting-edge language models to deliver concise, actionable summaries. Whether you're researching new vulnerabilities or staying ahead of the latest threat landscape, SecFeed provides the clarity and insights you need—fast.
 
-[![asciicast](https://asciinema.org/a/MkofnzMotbZpd9Tv8S5kMvk8a.svg)](https://asciinema.org/a/MkofnzMotbZpd9Tv8S5kMvk8a)
+![demo](./assets/demo.gif)
 
 ## Table of Contents
 

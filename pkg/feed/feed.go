@@ -145,7 +145,7 @@ func (f *Feed) fetchFeeds() {
 	articles, err := f.collect()
 	if err != nil {
 		log.Errorf("Failed to collect articles: %v", err)
-		return
+		articles = []types.Article{}
 	}
 	log.Infof("Collected %d articles", len(articles))
 
