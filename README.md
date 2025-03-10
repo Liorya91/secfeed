@@ -154,7 +154,20 @@ Flags:
 init_pull: 7
 ```
 
-**Running on local Ollama model**
+**Running on OpenAI models**
+
+```yaml
+llm:
+  client: "openai"
+  classification:
+    engine: "llm"
+    model: "gpt-4o-mini"
+    threshold: 8
+  summary:
+    model: "gpt-4o"
+```
+
+**Running on local Ollama models**
 
 ```yaml
 llm:
@@ -169,7 +182,7 @@ llm:
 
 **Running classification engine based on text embeddings**
 
-Text embeddings-based classification is still a work in progress, and more optimization is needed to make the results more reliable.
+Text embeddings-based classification is still **a work in progress**, and more optimization is needed to make the results more reliable.
 
 ```yaml
 llm:
@@ -190,19 +203,20 @@ SecFeed is designed with modularity in mind, separating components into distinct
 
 ```
 
- ┌─────────────┐   ┌────────────────┐   ┌──────────┐
- │ RSS Sources ├──►│ Feed Fetcher   ├──►│ Enricher │
- └─────────────┘   └────────────────┘   └────┬─────┘
-      │
-      ▼
- ┌──────────┐       ┌────────────┐     ┌────────────────┐
- │ Slack    │◄──────┤ Summary    │◄────┤ Classification │
- └──────────┘       └──────┬─────┘     └───────┬────────┘
-       │                   │
-       ▼                   ▼
- ┌───────────────────────────────────┐
- │ LLM Client (OpenAI / Ollama)      │
- └───────────────────────────────────┘
+    ┌─────────────┐   ┌────────────────┐   ┌──────────┐
+    │ RSS Sources ├──►│ Feed Fetcher   ├──►│ Enricher │
+    └─────────────┘   └────────────────┘   └────┬─────┘
+                                                │
+                                                ▼
+     ┌──────────┐       ┌────────────┐     ┌────────────────┐
+     │ Slack    │◄──────┤ Summary    │◄────┤ Classification │
+     └──────────┘       └──────┬─────┘     └───────┬────────┘
+                               │                   │
+                               ▼                   ▼
+                        ┌───────────────────────────────────┐
+                        │ LLM Client (OpenAI / Ollama)      │
+                        └───────────────────────────────────┘
+
 ```
 
 ### Core Components
@@ -243,6 +257,10 @@ SecFeed is designed with modularity in mind, separating components into distinct
    - Articles are formatted for Slack.
    - Sends webhook notifications.
 
+### Feed Fetcher
+
+TBD
+
 ### Classification Engine
 
 There are currently two classification methods that can be configured through the `llm.classification.engine` config value.
@@ -270,19 +288,12 @@ Contributions are welcome! See the [Roadmap](README.md#roadmap) in the README fo
 
 ## Roadmap
 
-### Important
-
-- Amortized cost
-- some tests
-
-### Nice to Have
-
 - Currently we aren't verifying the config object created in [config package](./pkg/config/config.go). Need to add basic verification, and default values for optional field.
 - Support reddit feeds. Although each Reddit channel has a dedicated `.rss` endpoint that provides an RSS feed, most of the content is redirected. So it doesn't make send to parse the content we get from the RSS field, and currently our url fetcher fails to get the content directly by querying Reddit through a GET request.
 - More tests for all the components.
 - Add option for a non-RSS feed based on LinkedIn or Twitter. Should receieve hashtags in configuration, and query these for new content.
 - Add ability to extract redirected URL within article contents, that contains the main content. For example, Reddit feeds, or articles that just repost an existing article. Maybe can be implemented by providing the LLM a tool that when it get's an URL that is important, to query and get the data from it.
-- Add special case for [tl;dr sec](https://tldrsec.com/). It supports RSS feed, but contains many artifact within a single item, so it should get a special treatment.
+- Add special case for [tl;dr sec](https://tldrsec.com/). It supports RSS feed, but contains many articles within a single item, so it should get a special treatment.
 - Once we find the source URL from articles, we may do some caching for when several articles repost the same originating article. In short, caching.
 - Ability to bypass Cloudflare when fetching URLs - needed for some feeds. Example in [`config.yml`](./config.yml)
 - Mature Embedding offering
