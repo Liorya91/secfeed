@@ -148,6 +148,12 @@ rss_feed:
     name: CrowdStrike Blog
   - url: https://www.mcafee.com/blogs/feed/
     name: McAfee Blogs
+  - url: https://securityboulevard.com/feed/
+    name: Security Boulevard
+  - url: https://www.informationweek.com/rss.xml
+    name: InformationWeek
+  - url: https://www.infosecurity-magazine.com/rss/news/
+    name: Infosecurity Magazine
 
   # TODO: Protected by Cloudflare
   # - url: https://www.varonis.com/blog/feed/

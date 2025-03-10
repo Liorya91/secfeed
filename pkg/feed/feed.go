@@ -122,6 +122,8 @@ func (f *Feed) collectFeed(feed config.RSSFeed) ([]types.Article, error) {
 				// the analysis will be less efficient though.
 			}
 
+			log.WithFields(logFields).Debug("Article successfully fetched. Content size is ", len(a.Content))
+
 			articles = append(articles, a)
 		}
 	}
