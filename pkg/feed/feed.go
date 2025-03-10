@@ -16,18 +16,39 @@ import (
 
 var pullInterval = 5 * time.Minute
 
+// Interface for feed parser to enable mocking
+type FeedParser interface {
+	ParseURL(url string) (*gofeed.Feed, error)
+}
+
 type Feed struct {
 	rssFeeds []config.RSSFeed
 	ch       chan types.Article
-	initFrom time.Time
-	lastPull time.Time
+
+	feedParser FeedParser
+
+	// For each feed, we storing the time from which we should have new articles.
+	// This is usually set to time of the last article we pulled.
+	//
+	// Timestamp checking is not enough, because probably publishers can
+	// retroacitvely publish the article, so we missing the articles.
+	//
+	// Also, we do not want to miss any articles during the time we iterate on the feeds.
+	lastItemPerFeed map[string]time.Time
 }
 
 func New(cfg *config.Config, initPull time.Duration) (*Feed, error) {
 	f := &Feed{
-		rssFeeds: cfg.RssFeed,
-		ch:       make(chan types.Article),
-		initFrom: time.Now().Add(-initPull),
+		rssFeeds:        cfg.RssFeed,
+		ch:              make(chan types.Article),
+		feedParser:      gofeed.NewParser(),
+		lastItemPerFeed: make(map[string]time.Time),
+	}
+
+	initFrom := time.Now().Add(-initPull)
+
+	for _, feed := range f.rssFeeds {
+		f.lastItemPerFeed[feed.Url] = initFrom
 	}
 
 	return f, nil
@@ -41,57 +62,78 @@ func (f *Feed) Start() {
 	go f.fetchFeeds()
 }
 
-func (f *Feed) collect(from time.Time) ([]types.Article, error) {
+func (f *Feed) collect() ([]types.Article, error) {
 	var articles []types.Article
 
-	parser := gofeed.NewParser()
-
-	for _, url := range f.rssFeeds {
-		feedFields := log.Fields{"name": url.Name, "url": url.Url}
-		log.WithFields(feedFields).Debug("Fetching feed")
-
-		feed, err := parser.ParseURL(url.Url)
+	for _, feed := range f.rssFeeds {
+		feedArticles, err := f.collectFeed(feed)
 		if err != nil {
-			log.WithFields(feedFields).Warn("Error fetching feed: %w", err)
-			continue
+			return nil, fmt.Errorf("failed to collect feed: %w", err)
 		}
 
-		for _, item := range feed.Items {
-			logFields := log.Fields{"title": item.Title, "link": item.Link}
+		articles = append(articles, feedArticles...)
+	}
 
-			a := types.Article{
-				Title:       item.Title,
-				Description: item.Description,
-				Link:        item.Link,
-				Content:     item.Content,
-				Categories:  item.Categories,
-			}
-			if item.PublishedParsed != nil {
-				a.Published = *item.PublishedParsed
+	return articles, nil
+}
+
+func (f *Feed) collectFeed(feed config.RSSFeed) ([]types.Article, error) {
+	feedFields := log.Fields{"name": feed.Name, "url": feed.Url}
+	log.WithFields(feedFields).Debug("Fetching feed. Previous pull time: ", f.lastItemPerFeed[feed.Url].Format("2006-01-02 15:04:05"))
+
+	parsedFeed, err := f.feedParser.ParseURL(feed.Url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch feed: %w", err)
+	}
+
+	log.WithFields(feedFields).Debugf("Fetched %d items", len(parsedFeed.Items))
+
+	var articles []types.Article
+	for _, item := range parsedFeed.Items {
+		logFields := log.Fields{"title": item.Title, "link": item.Link}
+
+		a := types.Article{
+			Title:       item.Title,
+			Description: item.Description,
+			Link:        item.Link,
+			Content:     item.Content,
+			Categories:  item.Categories,
+		}
+		if item.PublishedParsed != nil {
+			a.Published = *item.PublishedParsed
+		} else {
+			// Special case with CrowdStrike feed.
+			t, err := time.Parse("Jan 2, 2006 15:04:05-0700", item.Published)
+			if err != nil {
+				log.WithFields(logFields).Warn("Published date is nil")
+				continue
 			} else {
-				// Special case with CrowdStrike feed.
-				t, err := time.Parse("Jan 2, 2006 15:04:05-0700", item.Published)
-				if err != nil {
-					log.WithFields(logFields).Warn("Published date is nil")
-					continue
-				} else {
-					a.Published = t
-				}
-			}
-
-			if a.Published.After(from) {
-				// Fetching article content.
-				a, err = enrichArticleItem(a)
-				if err != nil {
-					log.WithFields(logFields).Warnf("Failed to enrich article: %v", err)
-
-					// We can leave without the content for now.
-					// the analysis will be less efficient though.
-				}
-
-				articles = append(articles, a)
+				a.Published = t
 			}
 		}
+
+		if a.Published.After(f.lastItemPerFeed[feed.Url]) {
+			// Fetching article content.
+			a, err = enrichArticleItem(a)
+			if err != nil {
+				log.WithFields(logFields).Warnf("Failed to enrich article: %v", err)
+
+				// We can leave without the content for now.
+				// the analysis will be less efficient though.
+			}
+
+			articles = append(articles, a)
+		}
+	}
+
+	if len(articles) > 0 {
+		// Updating the last timestamp with the last element.
+		// Assuming RSS feed is sorted by date.
+		f.lastItemPerFeed[feed.Url] = articles[0].Published
+
+		log.WithFields(feedFields).Debugf("Found %d new articles, updated last pull time to %v", len(articles), f.lastItemPerFeed[feed.Url])
+	} else {
+		log.WithFields(feedFields).Debug("No new articles")
 	}
 
 	return articles, nil
@@ -99,16 +141,13 @@ func (f *Feed) collect(from time.Time) ([]types.Article, error) {
 
 func (f *Feed) fetchFeeds() {
 	log.Info("Starting to fetch feeds")
-	log.Infof("Starting with initial pull from %v", f.initFrom.Format("2006-01-02 15:04:05"))
 
-	articles, err := f.collect(f.initFrom)
+	articles, err := f.collect()
 	if err != nil {
 		log.Errorf("Failed to collect articles: %v", err)
 		return
 	}
 	log.Infof("Collected %d articles", len(articles))
-
-	f.lastPull = time.Now()
 
 	for _, a := range articles {
 		f.ch <- a
@@ -117,14 +156,12 @@ func (f *Feed) fetchFeeds() {
 	log.Infof("Sleeping for %v", pullInterval)
 	ticker := time.NewTicker(5 * time.Minute)
 	for range ticker.C {
-		articles, err := f.collect(f.lastPull)
+		articles, err := f.collect()
 		if err != nil {
 			log.Errorf("Failed to collect articles: %v", err)
 			continue
 		}
 		log.Infof("Collected %d articles", len(articles))
-
-		f.lastPull = time.Now()
 
 		for _, a := range articles {
 			f.ch <- a
