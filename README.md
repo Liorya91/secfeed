@@ -106,14 +106,18 @@ llm:
   ...
 
 categories:
- - name: Software Supply Chain
-    description: Articles about software supply chain security, including best practices, tools, and case studies.
+- name: Software Supply Chain
+  description: >
+    Articles covering software supply chain security, including best practices,
+    tools, processes, and real-world case studies. Content may discuss securing
+    dependencies, preventing supply chain attacks, and maintaining the integrity
+    of software throughout its lifecycle.
     ...
 
 rss_feed:
- - url: https://feeds.feedburner.com/TheHackersNews
-    name: The Hacker News
-    ...
+- url: https://feeds.feedburner.com/TheHackersNews
+  name: The Hacker News
+  ...
 ```
 
 ### Environment Variables
@@ -132,12 +136,14 @@ secfeed --config config.yml
 
 ```
 Usage:
- secfeed [flags]
+  secfeed [flags]
 
 Flags:
- -c, --config string   config file path (default "config.yml")
- -h, --help            help for secfeed
- -v, --verbose         verbose output
+  -c, --config string     config file path (default "config.yml")
+  -d, --debug             debug mode (prints extra context with the summarized report)
+  -h, --help              help for secfeed
+  -l, --log-file string   log file path
+  -v, --verbose           verbose output
 ```
 
 ### Example Configs
@@ -178,7 +184,7 @@ llm:
 
 ## Architecture
 
-SecFeed is designed with modularity in mind, separating concerns into distinct packages:
+SecFeed is designed with modularity in mind, separating components into distinct packages:
 
 ### Flow Diagram
 
@@ -187,13 +193,13 @@ SecFeed is designed with modularity in mind, separating concerns into distinct p
  ┌─────────────┐   ┌────────────────┐   ┌──────────┐
  │ RSS Sources ├──►│ Feed Fetcher   ├──►│ Enricher │
  └─────────────┘   └────────────────┘   └────┬─────┘
- │
- ▼
+      │
+      ▼
  ┌──────────┐       ┌────────────┐     ┌────────────────┐
  │ Slack    │◄──────┤ Summary    │◄────┤ Classification │
  └──────────┘       └──────┬─────┘     └───────┬────────┘
- │                   │
- ▼                   ▼
+       │                   │
+       ▼                   ▼
  ┌───────────────────────────────────┐
  │ LLM Client (OpenAI / Ollama)      │
  └───────────────────────────────────┘
@@ -203,40 +209,39 @@ SecFeed is designed with modularity in mind, separating concerns into distinct p
 
 1. **Feed Fetcher** ([`feed`](./pkg/feed/))
 
-- Fetches articles from RSS feeds
-     - Provides a stream of articles for processing
-
-- This can be extended to include additional sources, such as LinkedIn and Twitter.
+   - Fetches articles from RSS feeds.
+   - Provides a stream of articles for processing.
+   - This can be extended to include additional sources, such as LinkedIn and Twitter.
 
 2. **Enricher** ([`feed.enrichArticleItem`](./pkg/feed/feed.go))
 
    - Content is usually missing from RSS feeds.
-        - Smartly fetches the content from the blog.
-        - Adding browser-like headers to avoid being blocked.
-        - Extracts the relevant information from the HTML.
-        - Using [go-readability](https://github.com/go-shiori/go-readability) for the text cleaning task.
+   - Smartly fetches the content from the blog.
+   - Adding browser-like headers to avoid being blocked.
+   - Extracts the relevant information from the HTML.
+   - Using [go-readability](https://github.com/go-shiori/go-readability) for the text cleaning task.
 
 3. **Classification Engine** ([`classification`](./pkg/classification))
 
-- Analyzes articles for relevance using LLM or embeddings
-     - Scores articles against user-defined categories
-     - Filters out irrelevant content based on threshold
+   - Analyzes articles for relevance using LLM or embeddings.
+   - Scores articles against user-defined categories.
+   - Filters out irrelevant content based on threshold.
 
 4. **LLM Client** ([`llm`](./pkg/llm/))
 
-- Abstracts interaction with language model providers
-     - Supports OpenAI API and Ollama
-     - Handles prompt engineering, result analysis, and input chunking.
-     - Tracking costs only for OpenAI implementations.
+   - Abstracts interaction with language model providers.
+   - Supports OpenAI API and Ollama.
+   - Handles prompt engineering, result analysis, and input chunking.
+   - Tracking costs only for OpenAI implementations.
 
-5. **Summary** ([`llm.Summarize`](./pkg/llm/llm.go))
+5. **Summary Engine** ([`llm.Summarize`](./pkg/llm/client.go))
 
-- Provides a summary of the article and relevant action items.
+   - Provides a summary of the article and relevant action items.
 
 6. **Slack** ([`slack`](./pkg/slack/))
 
-- Articles are formatted for Slack
-     - Sends webhook notifications
+   - Articles are formatted for Slack.
+   - Sends webhook notifications.
 
 ### Classification Engine
 
@@ -244,21 +249,19 @@ There are currently two classification methods that can be configured through th
 
 1. **LLM Classification**
 
-- Evaluation of article relevance is based on direct LLM queries. Provide the categories and their descriptions to the prompt, and ask for a relevance score between 0 and 10.
-     - Provides detailed explanations for classifications
-     - Higher accuracy but more token usage. See cost estimations [here](./README.md#cost-management).
+   - Evaluation of article relevance is based on direct LLM queries. Provide the categories and their descriptions to the prompt, and ask for a relevance score between 0 and 10.
+   - Provides detailed explanations for classifications
+   - Higher accuracy but more token usage. See cost estimations [here](./README.md#cost-management).
 
 2. **Embeddings Classification**
-      - Uses vector embeddings to match articles to categories.
-      - Pre-encode each category.
-      - Calculates the relation between each category and the article.
-      - More efficient for token usage
-      - Can't be trusted at the moment. Still WIP.
+   - Uses vector embeddings to match articles to categories.
+   - Pre-encode each category.
+   - Calculates the relation between each category and the article.
+   - More efficient for token usage
+   - Can't be trusted at the moment. Still WIP.
 
 ## Cost Management
 
-16 hours
-3 categories
 TBD
 
 ## Contributing
@@ -274,25 +277,19 @@ Contributions are welcome! See the [Roadmap](README.md#roadmap) in the README fo
 
 ### Nice to Have
 
-- verify config when parsed, together with settings default values.
-- extensive tests
-- Reddit feed.
-- Linkedin feed.
-- Following article that just fowards to a URL (like in reddit?)
-- Add tl;dr sec to feeds?
-- Caching
-- Ability to bypass Cloudflare when fetching URLs - needed for some feeds.
-- Check more feeds:
-    - security boulevard
-    - bank info security
-    - information week
-    - infosecurity magazine
-    - computerweekly
-    - hackread
-- Embedding
-    - generate similar words for improving the precision
+- Currently we aren't verifying the config object created in [config package](./pkg/config/config.go). Need to add basic verification, and default values for optional field.
+- Support reddit feeds. Although each Reddit channel has a dedicated `.rss` endpoint that provides an RSS feed, most of the content is redirected. So it doesn't make send to parse the content we get from the RSS field, and currently our url fetcher fails to get the content directly by querying Reddit through a GET request.
+- More tests for all the components.
+- Add option for a non-RSS feed based on LinkedIn or Twitter. Should receieve hashtags in configuration, and query these for new content.
+- Add ability to extract redirected URL within article contents, that contains the main content. For example, Reddit feeds, or articles that just repost an existing article. Maybe can be implemented by providing the LLM a tool that when it get's an URL that is important, to query and get the data from it.
+- Add special case for [tl;dr sec](https://tldrsec.com/). It supports RSS feed, but contains many artifact within a single item, so it should get a special treatment.
+- Once we find the source URL from articles, we may do some caching for when several articles repost the same originating article. In short, caching.
+- Ability to bypass Cloudflare when fetching URLs - needed for some feeds. Example in [`config.yml`](./config.yml)
+- Mature Embedding offering
+    - Automatically generate similar words for improving the precision
 - Handle rate limiting when fetching feeds
-- ci sanity
+- Create a sanity CI flow to allow checking baisc functionality in pull requests.
+- More RSS feeds
 
 ## License
 

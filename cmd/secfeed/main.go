@@ -31,8 +31,7 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "secfeed",
-	Short: "Security Feed CLI tool",
-	Long:  `A CLI tool fetching security feeds and vulnerability information.`,
+	Short: "AI-Powered Security Feed in Real Time",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := setupLog(); err != nil {
 			return err
