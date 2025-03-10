@@ -30,7 +30,7 @@ type Config struct {
 }
 
 type Reporting struct {
-	Slack  bool `yaml:"slack_webhook"`
+	Slack  bool `yaml:"slack"`
 	Stdout bool `yaml:"stdout"`
 }
 

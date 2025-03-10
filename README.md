@@ -7,8 +7,8 @@
  <img alt="Static Badge" src="https://img.shields.io/badge/Go-1.24+-00ADD8.svg"></a>
  <a href="https://opensource.org/license/apache-2-0" target="_blank">
  <img alt="Static Badge" src="https://img.shields.io/badge/License-Apache2-yellow.svg"></a>
- <a href="https://github.com/alex-ilgayev/secfeed/actions/workflows/ci.yml"  target="_blank">
- <img src="https://github.com/alex-ilgayev/secfeed/actions/workflows/ci.yml/badge.svg" alt="Static Badge"></a>
+ <a href="https://github.com/alex-ilgayev/secfeed/actions/workflows/build_and_push.yml"  target="_blank">
+ <img src="https://github.com/alex-ilgayev/secfeed/actions/workflows/build_and_push.yml/badge.svg" alt="Static Badge"></a>
 </p>
 
 SecFeed consolidates cybersecurity news and updates from multiple feeds and then leverages cutting-edge language models to deliver concise, actionable summaries. Whether you're researching new vulnerabilities or staying ahead of the latest threat landscape, SecFeed provides the clarity and insights you need—fast.
@@ -74,9 +74,15 @@ docker build -t secfeed .
 
 # Run with Docker
 docker run -v $(pwd)/config.yml:/app/config.yml \
- -e OPENAI_API_KEY \
-  -e SLACK_WEBHOOK_URL \
- secfeed
+-e OPENAI_API_KEY \
+-e SLACK_WEBHOOK_URL \
+secfeed
+
+# Run with Pre-built Docker Image
+docker run -v $(pwd)/config.yml:/app/config.yml \
+-e OPENAI_API_KEY \
+-e SLACK_WEBHOOK_URL \
+alexilgayev/secfeed
 ```
 
 ## Configuration

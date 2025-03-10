@@ -8,6 +8,7 @@ reporting:
 
   # send article summaries to stdout in markdown format
   stdout: true
+
 llm:
   # LLM client to use. Possible values: openai / ollama
   client: "openai"
@@ -29,6 +30,7 @@ llm:
   summary:
     # model name that will be used for summarization.
     model: "gpt-4o"
+
 categories:
   # Adding description is optional, but is very beneficial for the LLM model.
   # Description should explain what the user is looking for in the article.
