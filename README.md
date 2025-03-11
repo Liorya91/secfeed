@@ -257,10 +257,6 @@ SecFeed is designed with modularity in mind, separating components into distinct
    - Articles are formatted for Slack.
    - Sends webhook notifications.
 
-### Feed Fetcher
-
-TBD
-
 ### Classification Engine
 
 There are currently two classification methods that can be configured through the `llm.classification.engine` config value.
@@ -280,7 +276,24 @@ There are currently two classification methods that can be configured through th
 
 ## Cost Management
 
-TBD
+**Cost Considerations**
+
+The project was designed with cost efficiency in mind, following these design principles:
+
+- Separate Models for Classification and Summarization. Since classification is more frequent, a less capable (cheaper) model is used for that task, while a more advanced model is reserved for summarization.
+  Strict Input Text Limits: This helps control token usage and prevent costs from skyrocketing.
+  Lightweight Infrastructure: The program can run on the smallest VM offered by most cloud providers, keeping infrastructure costs low.
+  Local Ollama Setup: Running locally avoids external service fees, such as those from OpenAI.
+
+**Cost Estimations**
+
+When run in verbose mode (`-v`), every OpenAI API call also logs its running total cost. This is implemented in [`openai/client.go`](./pkg/llm/openai/client.go) using a static map of per-model pricing (based on OpenAI’s rates) and token usage per call. An example log entry might look like:
+
+```bash
+2025-03-10 21:41:30 [debu] [model:gpt-4o-2024-08-06] [tokens:2004] [total_cost:0.01585945] OpenAI API CreateChatCompletion call
+```
+
+From a simple calculation, with 33 feeds, 8 categories, ~20 articles per day, and 7 being relevant, the daily cost comes to about $0.00296, or $2.13 per month. Reducing the number of categories or making their descriptions shorter can easily cut costs by an additional 30–40%.
 
 ## Contributing
 
