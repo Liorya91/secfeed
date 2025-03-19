@@ -156,7 +156,7 @@ func (f *Feed) fetchFeeds() {
 	}
 
 	log.Infof("Sleeping for %v", pullInterval)
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(pullInterval)
 	for range ticker.C {
 		articles, err := f.collect()
 		if err != nil {
